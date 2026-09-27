@@ -2,6 +2,23 @@
 
 Guidance for AI agents and human contributors working in this repo.
 
+This is **duo180 Office**, a fork of GenOffice (Apache-2.0) that works towards a
+simplified office suite without the original AI layer. The engine layer is
+unchanged; contributor-facing notes live in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Repository-specific notes
+
+- There is no in-app AI: no chat panels, no model providers, no agent tool
+  registries and no MCP/CLI control bridge. Do not reintroduce model calls in
+  the apps.
+- The document edit-op layer that the ribbon, dialogs and tests share lives in
+  `apps/docs/src/renderer/ops/` (ops registry, table/field/style/note/comment
+  ops, HTML-fragment parsing, track-change application). It is **not** AI code:
+  keep it UI-agnostic and model-agnostic.
+- Local file search (index over names, folders and extracted text) is a
+  product feature, not AI: it is powered by `packages/file-parse` and the
+  shell's `src/main/file-index/`. Keep it working.
+
 ## Theming rules (mandatory)
 
 The suite supports light / dark / system UI themes. The switching mechanism is a
@@ -57,4 +74,4 @@ system mode).
   defines the key set). Add a new key to `zh.ts` and to every sibling shard;
   the `satisfies Record<keyof typeof zh, string>` on each shard turns a
   missing or extra key into a type error. Never grow the aggregator back into
-  a single 19-locale object.
+  a single multi-locale object.
