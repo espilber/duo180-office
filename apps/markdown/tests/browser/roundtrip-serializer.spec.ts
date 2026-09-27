@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Editor } from '@tiptap/core'
 import { openSource, rebaseSource, source } from './helpers'
@@ -137,7 +135,10 @@ for (const enabled of [false, true]) {
     test(`records insertion-to-frame timings at ${size} bytes, flag ${enabled}`, async ({
       page,
     }) => {
-      const seed = readFileSync(resolve(process.cwd(), 'skills/genoffice/SKILL.md'), 'utf8')
+      const seed =
+        'duo180 Office, prueba de rendimiento de serializacion markdown. ' +
+        'Encabezados, listas y parrafos con acentos: cafe, resumen, edicion. ' +
+        'The quick brown fox jumps over the lazy dog. '
       let text = Buffer.from(seed.repeat(Math.ceil(size / Buffer.byteLength(seed)) + 1))
         .subarray(0, size)
         .toString('utf8')

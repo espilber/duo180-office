@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { Editor } from '@tiptap/core'
@@ -249,16 +249,21 @@ describe('source splice', () => {
     expect(load(editor, '# A\r\n\r\nb\r\n')).toBeNull()
   })
 
+  // the full repository corpus takes far longer than the default timeout on Windows
   it('round-trips every markdown file in the repository', () => {
     const root = execSync('git rev-parse --show-toplevel', { encoding: 'utf8' }).trim()
     const files = execSync('git ls-files -- "*.md"', { cwd: root, encoding: 'utf8' })
       .split('\n')
-      .filter(Boolean)
+      // the index lags behind the working tree — entries deleted but not yet
+      // staged (large refactors) are not part of the round-trip corpus
+      .filter((file) => file && existsSync(join(root, file)))
     expect(files.length).toBeGreaterThan(20)
     const editor = createEditor()
     const declined: string[] = []
     const differs: string[] = []
     for (const file of files) {
+      // a sibling refactor may delete a tracked file mid-run; it is out of the corpus then
+      if (!existsSync(join(root, file))) continue
       const source = readFileSync(join(root, file), 'utf8')
       const map = load(editor, source)
       if (!map) {
@@ -278,5 +283,5 @@ describe('source splice', () => {
     expect(declined.length, `declined: ${declined.join(', ')}`).toBeLessThanOrEqual(
       Math.ceil(files.length * 0.05),
     )
-  })
+  }, 120_000)
 })

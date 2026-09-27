@@ -4,7 +4,7 @@ import { TextSelection } from '@tiptap/pm/state'
 import { parseDocx, saveDocx } from '@genoffice/docx-engine'
 import { buildDocx } from '../../../packages/docx-engine/tests/helpers/build-docx'
 import { blocksToPmDoc, pmDocToSavePlan, type PmNode } from '../src/renderer/editor/convert'
-import { executeTool } from '../src/renderer/ai/tools'
+import { executeOps } from '../src/renderer/ops/ops'
 
 /**
  * Guard tests for rawPPr passthrough: pPr constructs the format model cannot
@@ -59,18 +59,10 @@ describe('rawPPr passthrough', () => {
 
   it('a format command merges into the pPr, keeping unmanaged children', async () => {
     const { editor, parsed } = await openEditor(EXOTIC_P)
-    const exec = await executeTool(
-      editor,
-      {
-        id: 't',
-        name: 'apply_ops',
-        input: {
-          ops: [{ op: 'setParagraphFormat', target: { blockIndexes: [0] }, align: 'center' }],
-        },
-      },
-      NUM_IDS,
-    )
-    expect(exec.isError).toBeFalsy()
+    const exec = executeOps(editor, [
+      { op: 'setParagraphFormat', target: { blockIndexes: [0] }, align: 'center' },
+    ])
+    expect(exec.ok).toBe(true)
     const plan = pmDocToSavePlan(editor.getJSON() as PmNode, parsed.blocks)
     const saved = await saveDocx(parsed, plan.saveBlocks)
     editor.destroy()

@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -11,7 +12,13 @@ import type { HeadlessExportRequest } from '@genoffice/electron-utils'
  * The `--headless-export` host (src/main/headless-export.ts): input checks,
  * extension routing and the exit-code mapping. The per-module exporters are
  * injected, so no Electron window is ever created here.
+ *
+ * The host resolves its paths before probing, so the fixtures below are kept
+ * as short absolute-looking POSIX strings and resolved the same way — the
+ * expectations stay identical on every platform.
  */
+
+const p = (path: string) => resolve(path)
 
 const request = (
   input: string,
@@ -26,7 +33,7 @@ const request = (
 
 /** Every path in `present` exists and is a file; everything else does not. */
 const fsWith = (present: readonly string[], isFile = true) => ({
-  exists: (path: string) => present.includes(path),
+  exists: (path: string) => present.some((entry) => p(entry) === path),
   isFile: () => isFile,
 })
 
@@ -52,8 +59,8 @@ describe('validateHeadlessPaths', () => {
     const result = validateHeadlessPaths(request('/docs/a.docx'), fsWith(['/docs/a.docx', '/out']))
     expect(result).toEqual({
       ok: true,
-      input: '/docs/a.docx',
-      outPath: '/out/a.pdf',
+      input: p('/docs/a.docx'),
+      outPath: p('/out/a.pdf'),
       module: 'docs',
     })
   })
@@ -72,7 +79,7 @@ describe('validateHeadlessPaths', () => {
     expect(validateHeadlessPaths(request('/nope.docx'), fsWith([]))).toEqual({
       ok: false,
       code: 2,
-      message: expect.stringContaining('/nope.docx'),
+      message: expect.stringContaining('nope.docx'),
     })
   })
 
@@ -94,7 +101,7 @@ describe('validateHeadlessPaths', () => {
       request('/docs/a.docx', '/gone/a.pdf'),
       fsWith(['/docs/a.docx']),
     )
-    expect(result).toMatchObject({ ok: false, code: 1, message: expect.stringContaining('/gone') })
+    expect(result).toMatchObject({ ok: false, code: 1, message: expect.stringContaining('gone') })
   })
 })
 
@@ -106,8 +113,8 @@ describe('runHeadlessExport', () => {
       exporters,
       fsWith(['/decks/a.pptx', '/out', '/out/a.pdf']),
     )
-    expect(calls).toEqual(['slides:/decks/a.pptx->/out/a.pdf:pdf'])
-    expect(outcome).toEqual({ ok: true, input: '/decks/a.pptx', outPath: '/out/a.pdf' })
+    expect(calls).toEqual([`slides:${p('/decks/a.pptx')}->${p('/out/a.pdf')}:pdf`])
+    expect(outcome).toEqual({ ok: true, input: p('/decks/a.pptx'), outPath: p('/out/a.pdf') })
   })
 
   it.each([
@@ -143,7 +150,7 @@ describe('runHeadlessExport', () => {
     expect(outcome).toMatchObject({
       ok: false,
       code: 3,
-      message: expect.stringContaining('/out/a.pdf'),
+      message: expect.stringContaining('a.pdf'),
     })
   })
 

@@ -33,7 +33,7 @@ import {
   type TableSelectKind,
 } from '../editor/table-ops'
 import type { TableDialogKind } from './TableDialogs'
-import { IconSparkle } from './icons'
+
 import { spellcheckEnabled } from '../spellcheck-pref'
 import { applySpellingSuggestion } from '../editor/spell-replace'
 import { linkRangeAt, linkTarget, removeLink } from '../editor/link-actions'
@@ -72,7 +72,6 @@ interface EditorContextMenuProps {
   onNewComment: () => void
   onViewImage: (src: string) => void
   onSaveImageAs: (src: string) => void
-  onAiPreset: (instruction: string) => void
   /** List items: restart numbering / continue numbering (shown when the cursor is on a docListItem) */
   onRestartNumbering?: () => void
   onContinueNumbering?: () => void
@@ -93,16 +92,6 @@ interface EditorContextMenuProps {
   onRespell?: () => void
 }
 
-/** target languages mirrored from the Review → Translate dropdown; the localized label also goes into the LLM prompt */
-const TRANSLATE_TARGETS: Array<{ labelKey: StringKey }> = [
-  { labelKey: 'appLangEnglish' },
-  { labelKey: 'appLangSimplifiedChinese' },
-  { labelKey: 'appLangJapanese' },
-  { labelKey: 'appLangKorean' },
-  { labelKey: 'appLangFrench' },
-  { labelKey: 'appLangGerman' },
-  { labelKey: 'appLangSpanish' },
-]
 
 const MENU_WIDTH = 240
 
@@ -134,7 +123,6 @@ export function EditorContextMenu({
   onNewComment,
   onViewImage,
   onSaveImageAs,
-  onAiPreset,
   onRestartNumbering,
   onContinueNumbering,
   onSetNumberingValue,
@@ -225,9 +213,6 @@ export function EditorContextMenu({
   const field = fieldRangeAt(editor.state, clickPos)
   const canComment = hasSelection || wordRangeAtCaret(editor) !== null
   const canEdit = editor.isEditable
-  const selectedText = hasSelection ? editor.state.doc.textBetween(from, to, ' ').trim() : ''
-  // Synonyms targets a word / short phrase, not long selections
-  const synonymText = selectedText.length > 0 && selectedText.length <= 20 ? selectedText : ''
 
   // keep the menu inside the viewport (flip up / clamp left near the edges)
   const [pos, setPos] = useState({ left: menu.x, top: menu.y })
@@ -343,22 +328,15 @@ export function EditorContextMenu({
       disabled?: boolean
       onClick?: () => void
       submenuKey?: string
-      ai?: boolean
     },
   ) => (
     <button
       className="ctx-item"
       disabled={opts.disabled}
-      data-tip={opts.ai ? t('appAiBadgeTip') : undefined}
       onMouseEnter={() => setSubmenu(opts.submenuKey ?? null)}
       onClick={opts.submenuKey ? undefined : opts.onClick}
     >
       <span className="ctx-label">{label}</span>
-      {opts.ai && (
-        <span className="copilot-badge copilot-badge-menu">
-          <IconSparkle size={10} />
-        </span>
-      )}
       {opts.key && <span className="ctx-key">{platformShortcuts(opts.key)}</span>}
       {opts.submenuKey && <span className="ctx-arrow">›</span>}
     </button>
@@ -682,37 +660,6 @@ export function EditorContextMenu({
           </div>
         </>
       )}
-      <div className="ctx-sep" />
-      {item(t('appSynonyms'), {
-        disabled: !synonymText,
-        ai: true,
-        onClick: run(() => onAiPreset(t('appSynonymsPrompt', { text: synonymText }))),
-      })}
-      <div className="ctx-item-wrap" onMouseLeave={() => setSubmenu(null)}>
-        {item(t('appTranslate'), { disabled: !hasSelection, submenuKey: 'translate', ai: true })}
-        {submenu === 'translate' && hasSelection && (
-          <div className="ctx-submenu">
-            {TRANSLATE_TARGETS.map((target) => (
-              <button
-                key={target.labelKey}
-                className="ctx-item"
-                onClick={run(() =>
-                  onAiPreset(
-                    t('appTranslateSelectionPrompt', {
-                      lang: t(target.labelKey),
-                      text: selectedText,
-                    }),
-                  ),
-                )}
-              >
-                <span className="ctx-label">
-                  {t('appTranslateTo', { lang: t(target.labelKey) })}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
       {isFloating && (
         <>
           <div className="ctx-sep" />

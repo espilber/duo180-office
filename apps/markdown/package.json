@@ -1,6 +1,6 @@
 {
   "name": "@genoffice/markdown",
-  "productName": "GenOffice Markdown",
+  "productName": "duo180 Office Markdown",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "private": true,
@@ -14,9 +14,6 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@genoffice/agent-core": "*",
-    "@genoffice/ai-provider": "*",
-    "@genoffice/ai-search": "*",
     "@genoffice/docx-engine": "*",
     "@genoffice/electron-utils": "*",
     "@genoffice/i18n": "*",
@@ -52,7 +49,7 @@
     "vite": "^7.3.1",
     "vitest": "^4.1.11"
   },
-  "author": "GenOffice",
+  "author": "duo180 Office",
   "dependencies": {
     "@tiptap/extension-mathematics": "3.31.0",
     "katex": "^0.16.47",

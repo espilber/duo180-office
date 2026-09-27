@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { Editor } from '@tiptap/core'
 import { editorExtensions } from '../src/renderer/editor/extensions'
-import { executeOps } from '../src/renderer/ai/ops'
+import { executeOps } from '../src/renderer/ops/ops'
 import { setModuleLang } from '../src/renderer/i18n/locale'
 
 interface JsonNode {
@@ -853,20 +853,6 @@ describe('partial selection (character-precise scope)', () => {
 })
 
 describe('op registry contract', () => {
-  it('every registered op is documented in the system prompt and the apply_ops tool description', async () => {
-    const { opNames, opSignatures } = await import('../src/renderer/ai/ops')
-    const { AGENT_SYSTEM_PROMPT } = await import('../src/renderer/ai/protocol')
-    const { AGENT_TOOLS } = await import('../src/renderer/ai/tools')
-    const tool = AGENT_TOOLS.find((t) => t.name === 'apply_ops')
-    expect(tool).toBeDefined()
-    for (const name of opNames()) {
-      expect(tool!.description).toContain(name)
-      expect(AGENT_SYSTEM_PROMPT).toContain(`{ op: "${name}"`)
-    }
-    for (const signature of opSignatures()) expect(AGENT_SYSTEM_PROMPT).toContain(signature)
-    expect(AGENT_SYSTEM_PROMPT).not.toContain('apply_commands')
-  })
-
   it('dryRun validates and plans without touching the document', () => {
     const editor = createEditor(fixtureDoc())
     const before = JSON.stringify(editor.getJSON())
@@ -982,9 +968,8 @@ describe('UI ops: the ribbon issues the same ops as the model', () => {
   const cellPara = (editor: Editor, col: number) =>
     editor.state.doc.child(1).child(0).child(col).child(0)
 
-  it('UI-only ops are unknown to the model but run for the UI without the AI highlight', async () => {
-    const { runUiOps, opNames } = await import('../src/renderer/ai/ops')
-    const { AGENT_SYSTEM_PROMPT } = await import('../src/renderer/ai/protocol')
+  it('UI-only ops are unknown to executeOps but run for the UI without the AI highlight', async () => {
+    const { runUiOps, opNames } = await import('../src/renderer/ops/ops')
     const editor = createEditor(fixtureDoc())
     const ai = executeOps(editor, [
       { op: 'setParagraphAttrs', target: { blockIndexes: [1] }, attrs: { align: 'right' } },
@@ -993,7 +978,6 @@ describe('UI ops: the ribbon issues the same ops as the model', () => {
     expect(ai.error).toContain('unknown op "setParagraphAttrs"')
     for (const name of ['setParagraphAttrs', 'stepIndent', 'stepHangingIndent']) {
       expect(opNames()).not.toContain(name)
-      expect(AGENT_SYSTEM_PROMPT).not.toContain(`"${name}"`)
     }
     expect(
       runUiOps(editor, [
@@ -1005,7 +989,7 @@ describe('UI ops: the ribbon issues the same ops as the model', () => {
   })
 
   it('a range target stands in for the selection (blur-committed dialog inputs)', async () => {
-    const { runUiOps } = await import('../src/renderer/ai/ops')
+    const { runUiOps } = await import('../src/renderer/ops/ops')
     const editor = createEditor(fixtureDoc())
     const block3Pos =
       editor.state.doc.child(0).nodeSize +
@@ -1030,7 +1014,7 @@ describe('UI ops: the ribbon issues the same ops as the model', () => {
   })
 
   it('paragraph ops reach the paragraphs inside a table: the whole table for the model, the selected cell for the UI', async () => {
-    const { runUiOps } = await import('../src/renderer/ai/ops')
+    const { runUiOps } = await import('../src/renderer/ops/ops')
     const ai = createEditor([heading([text('T')]), cellTable()])
     const outcome = executeOps(ai, [
       { op: 'setParagraphFormat', target: { blockIndexes: [1] }, align: 'center' },
@@ -1053,7 +1037,7 @@ describe('UI ops: the ribbon issues the same ops as the model', () => {
   })
 
   it('UI alignment also lands on selected images as their w:jc; the model op skips them as protected', async () => {
-    const { runUiOps } = await import('../src/renderer/ai/ops')
+    const { runUiOps } = await import('../src/renderer/ops/ops')
     const image = (): JsonNode => ({
       type: 'docProtected',
       attrs: {
@@ -1084,7 +1068,7 @@ describe('UI ops: the ribbon issues the same ops as the model', () => {
   })
 
   it('stepIndent treats each paragraph on its own: list items change level, paragraphs snap to half-inch stops', async () => {
-    const { runUiOps } = await import('../src/renderer/ai/ops')
+    const { runUiOps } = await import('../src/renderer/ops/ops')
     const editor = createEditor([
       listItem([text('item')], { numId: '1', ilvl: 1 }),
       para([text('plain')], { indentLeft: 500 }),

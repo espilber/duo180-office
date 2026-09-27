@@ -12,10 +12,10 @@ import { normalizeSheetRefs, primaryCellOf, primarySheetId, type SheetRef } from
  *
  * The shell main process pushes one command at a time (`sheets:mcp-command`);
  * each command runs against the live Univer workbook through the same executors
- * the built-in AI uses (readers from ai/workbook-readers.ts, the op planner and
+ * the app's own edits use (readers from workbook-readers.ts, the op planner and
  * apply path from op-executor.ts, the save pipeline from save-actions.ts), so
  * external edits land in the edit journal and undo history exactly like
- * in-app/AI ones. Results are reported back correlated by requestId
+ * in-app ones. Results are reported back correlated by requestId
  * (`sheets:mcp-result`), and once the workbook is mounted the bridge announces
  * `sheets:mcp-ready` — the shell waits for it before accepting a session.
  *
@@ -164,7 +164,7 @@ export function installSheetsMcpBridge(handlers: McpSheetHandlers): () => void {
             reply(false, undefined, named.error)
             return
           }
-          // Same validation the built-in AI path applies (ai/tools.ts): without
+          // Same validation the operation-batch plan builder applies (plan-operations.ts): without
           // it a missing sheetId surfaces later as a cryptic
           // "Unknown sheet: undefined" from the planner instead of naming the op.
           const parsed = z.array(workbookOperationSchema).safeParse(named.ops)

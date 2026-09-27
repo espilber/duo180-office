@@ -1,13 +1,5 @@
-import type { AiPanelPrefs } from '@genoffice/ui'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
-import type {
-  AiChatResponse,
-  AiSettings,
-  AiStreamChunk,
-  GenSparkAccountStatus,
-} from '@genoffice/ai-provider'
-import type { ProjectApi } from '@genoffice/project-store'
 import type {
   AttachmentAddResult,
   AttachmentImageResult,
@@ -38,15 +30,10 @@ import type {
   WorkbookSaveRequest,
   WorkbookSaveResult,
   WorkbookVisualObject,
-  WebSearchResult,
-  ImageSearchResponse,
-  GenerateImageResult,
 } from '../shared/desktop-api'
 import {
   HEADER_FOOTER_PICTURE_POSITION,
   IPC_CHANNELS,
-  MAX_CREATE_DOCUMENT_CONTENT_CHARS,
-  MAX_CREATE_DOCUMENT_TITLE_CHARS,
   MAX_CSV_EXPORT_CHARS,
   MAX_PDF_TEMPLATE_CHARS,
   MAX_SAVE_EDITS,
@@ -76,13 +63,6 @@ const desktopApi: DesktopApi = {
     const listener = (_event: Electron.IpcRendererEvent, value: AutoSaveDefault) => handler(value)
     ipcRenderer.on('app:auto-save-default-changed', listener)
     return () => ipcRenderer.removeListener('app:auto-save-default-changed', listener)
-  },
-  getAiPanelPrefs: () => ipcRenderer.invoke('app:get-ai-panel-prefs'),
-  setAiPanelPrefs: (patch) => ipcRenderer.invoke('app:set-ai-panel-prefs', patch),
-  onAiPanelPrefsChanged: (handler) => {
-    const listener = (_event: Electron.IpcRendererEvent, prefs: AiPanelPrefs) => handler(prefs)
-    ipcRenderer.on('app:ai-panel-prefs-changed', listener)
-    return () => ipcRenderer.removeListener('app:ai-panel-prefs-changed', listener)
   },
   onChromePressed(handler) {
     const listener = () => handler()
@@ -157,6 +137,17 @@ const desktopApi: DesktopApi = {
       throw new Error('Invalid local image response.')
     }
     return result as { mediaType: 'image/png' | 'image/jpeg' | 'image/gif'; base64: string }
+  },
+  async fetchImage(url) {
+    if (typeof url !== 'string' || !/^https?:\/\//i.test(url) || url.length > 2048) {
+      throw new Error('Invalid image URL.')
+    }
+    const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.fetchImage, url)
+    if (result === null) return null
+    if (!isRecord(result) || typeof result.base64 !== 'string' || typeof result.mime !== 'string') {
+      throw new Error('Invalid image download response.')
+    }
+    return result as { base64: string; mime: string }
   },
   async captureScreenSources() {
     const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.captureScreenSources)
@@ -337,41 +328,6 @@ const desktopApi: DesktopApi = {
     }
     return result
   },
-  async createDocument(request) {
-    if (
-      !isRecord(request) ||
-      (request.type !== 'xlsx' &&
-        request.type !== 'csv' &&
-        request.type !== 'docx' &&
-        request.type !== 'pdf' &&
-        request.type !== 'md') ||
-      typeof request.title !== 'string' ||
-      request.title.length === 0 ||
-      request.title.length > MAX_CREATE_DOCUMENT_TITLE_CHARS ||
-      typeof request.content !== 'string' ||
-      request.content.length === 0 ||
-      request.content.length >
-        (request.type === 'xlsx' || request.type === 'csv'
-          ? MAX_CSV_EXPORT_CHARS
-          : MAX_CREATE_DOCUMENT_CONTENT_CHARS) ||
-      (request.sheetName !== undefined &&
-        (typeof request.sheetName !== 'string' ||
-          request.sheetName.length === 0 ||
-          request.sheetName.length > 31))
-    ) {
-      throw new Error('Invalid create-document request.')
-    }
-    const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.createDocument, request)
-    if (
-      !isRecord(result) ||
-      typeof result.ok !== 'boolean' ||
-      (result.path !== undefined && typeof result.path !== 'string') ||
-      (result.error !== undefined && typeof result.error !== 'string')
-    ) {
-      throw new Error('Invalid create-document response.')
-    }
-    return result as { ok: boolean; path?: string; error?: string }
-  },
   async closeWorkbook(sessionId) {
     if (!isUuid(sessionId)) throw new Error('Invalid workbook session.')
     await ipcRenderer.invoke(IPC_CHANNELS.closeWorkbook, sessionId)
@@ -438,90 +394,6 @@ const desktopApi: DesktopApi = {
   },
   replyRecoveryPrompt(restore) {
     ipcRenderer.send(IPC_CHANNELS.recoveryPromptReply, restore === true)
-  },
-  async getAiSettings() {
-    const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.aiGetSettings)
-    if (!isRecord(result)) throw new Error('Invalid AI settings response.')
-    return result as unknown as AiSettings
-  },
-  async setAiSettings(settings) {
-    await ipcRenderer.invoke(IPC_CHANNELS.aiSetSettings, settings)
-  },
-  async aiChat(request) {
-    const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.aiChat, request)
-    if (!isRecord(result) || typeof result.ok !== 'boolean') {
-      throw new Error('Invalid AI chat response.')
-    }
-    return result as unknown as AiChatResponse
-  },
-  async aiStream(request) {
-    await ipcRenderer.invoke(IPC_CHANNELS.aiStream, request)
-  },
-  async aiStreamCancel(requestId) {
-    if (!requestId) throw new Error('Invalid AI stream request id.')
-    await ipcRenderer.invoke(IPC_CHANNELS.aiStreamCancel, requestId)
-  },
-  async aiGskStatus(withEmail) {
-    const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.aiGskStatus, withEmail)
-    if (!isRecord(result) || typeof result.loggedIn !== 'boolean') {
-      throw new Error('Invalid Genspark account status response.')
-    }
-    return result as unknown as GenSparkAccountStatus
-  },
-  async aiGskLogin() {
-    await ipcRenderer.invoke(IPC_CHANNELS.aiGskLogin)
-  },
-  async webSearch(query, maxResults) {
-    if (typeof query !== 'string' || !query.trim() || query.length > 512) {
-      throw new Error('Invalid search query.')
-    }
-    const result: unknown = await ipcRenderer.invoke('ai:web-search', query, maxResults)
-    if (!isRecord(result) || !Array.isArray(result.results) || typeof result.method !== 'string') {
-      throw new Error('Invalid web search response.')
-    }
-    return result as unknown as WebSearchResult
-  },
-  async imageSearch(query, maxResults) {
-    if (typeof query !== 'string' || !query.trim() || query.length > 512) {
-      throw new Error('Invalid search query.')
-    }
-    const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.aiImageSearch, query, maxResults)
-    if (!isRecord(result) || !Array.isArray(result.images) || typeof result.method !== 'string') {
-      throw new Error('Invalid image search response.')
-    }
-    return result as unknown as ImageSearchResponse
-  },
-  async generateImage(op) {
-    if (!isRecord(op) || typeof op.prompt !== 'string' || !op.prompt.trim()) {
-      throw new Error('Invalid image generation request.')
-    }
-    const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.aiGenerateImage, op)
-    if (!isRecord(result)) throw new Error('Invalid image generation response.')
-    return result as unknown as GenerateImageResult
-  },
-  async fetchImage(url) {
-    if (typeof url !== 'string' || !/^https?:\/\//i.test(url) || url.length > 2048) {
-      throw new Error('Invalid image URL.')
-    }
-    const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.aiFetchImage, url)
-    if (result === null) return null
-    if (!isRecord(result) || typeof result.base64 !== 'string' || typeof result.mime !== 'string') {
-      throw new Error('Invalid image download response.')
-    }
-    return result as { base64: string; mime: string }
-  },
-  onAiStream(callback) {
-    const listener = (_event: unknown, chunk: unknown): void => {
-      if (
-        isRecord(chunk) &&
-        typeof chunk.requestId === 'string' &&
-        typeof chunk.type === 'string'
-      ) {
-        callback(chunk as unknown as AiStreamChunk)
-      }
-    }
-    ipcRenderer.on(IPC_CHANNELS.aiStreamChunk, listener)
-    return () => ipcRenderer.removeListener(IPC_CHANNELS.aiStreamChunk, listener)
   },
   async consumeNewBlankWorkbook() {
     const result: unknown = await ipcRenderer.invoke('sheets:consume-new-blank')
@@ -669,14 +541,6 @@ function parseAttachmentAddResult(input: unknown): AttachmentAddResult {
 }
 
 contextBridge.exposeInMainWorld('desktopApi', desktopApi)
-
-const projectApi: ProjectApi = {
-  resolveChat: (args) => ipcRenderer.invoke('project:resolveChat', args),
-  appendChat: (args) => ipcRenderer.invoke('project:appendChat', args),
-  loadChat: (args) => ipcRenderer.invoke('project:loadChat', args),
-  rebindChat: (args) => ipcRenderer.invoke('project:rebindChat', args),
-}
-contextBridge.exposeInMainWorld('projectApi', projectApi)
 
 // Off by default. e2e drivers launch the BUILT app with GENOFFICE_DEBUG_HOOKS=1
 // so the renderer exposes window.__genofficeDebug (see App.tsx) — the dev-only

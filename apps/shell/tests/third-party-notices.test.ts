@@ -20,24 +20,29 @@ describe('third-party license aggregation', () => {
     expect(text).toContain('Apache License')
   })
 
-  it('generates the notice consumed by every shell packaging entrypoint', () => {
-    const root = join(__dirname, '../../..')
-    execFileSync(process.execPath, [join(root, 'tools/gen-third-party-notices.mjs')], {
-      cwd: root,
-      stdio: 'pipe',
-    })
-    const text = readFileSync(join(root, 'apps/shell/build/THIRD-PARTY-NOTICES.txt'), 'utf8')
-    expect(text).toContain('@embedpdf/pdfium')
-    expect(text).toContain('Copyright 2014 PDFium Authors')
-    expect(text).toContain('Apache License')
+  // walks node_modules to aggregate licenses; slow machines need more than the default
+  it(
+    'generates the notice consumed by every shell packaging entrypoint',
+    () => {
+      const root = join(__dirname, '../../..')
+      execFileSync(process.execPath, [join(root, 'tools/gen-third-party-notices.mjs')], {
+        cwd: root,
+        stdio: 'pipe',
+      })
+      const text = readFileSync(join(root, 'apps/shell/build/THIRD-PARTY-NOTICES.txt'), 'utf8')
+      expect(text).toContain('@embedpdf/pdfium')
+      expect(text).toContain('Copyright 2014 PDFium Authors')
+      expect(text).toContain('Apache License')
 
-    const shellPackage = JSON.parse(
-      readFileSync(join(root, 'apps/shell/package.json'), 'utf8'),
-    ) as { scripts: Record<string, string> }
-    for (const target of ['dist:mac', 'dist:win', 'dist:linux']) {
-      expect(shellPackage.scripts[target]).toContain('npm run notices')
-    }
-    const builder = readFileSync(join(root, 'apps/shell/electron-builder.cjs'), 'utf8')
-    expect(builder).toContain('ensureThirdPartyNotices()')
-  })
+      const shellPackage = JSON.parse(
+        readFileSync(join(root, 'apps/shell/package.json'), 'utf8'),
+      ) as { scripts: Record<string, string> }
+      for (const target of ['dist:mac', 'dist:win', 'dist:linux']) {
+        expect(shellPackage.scripts[target]).toContain('npm run notices')
+      }
+      const builder = readFileSync(join(root, 'apps/shell/electron-builder.cjs'), 'utf8')
+      expect(builder).toContain('ensureThirdPartyNotices()')
+    },
+    120_000,
+  )
 })

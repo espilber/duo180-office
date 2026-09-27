@@ -1,45 +1,47 @@
-name: Bug report
-description: Something is broken or behaves unexpectedly
+name: Informe de error
+description: Algo no funciona o se comporta de forma inesperada
 labels: [bug]
 body:
   - type: dropdown
     id: app
     attributes:
-      label: App
-      description: Which part of the suite is affected?
+      label: Aplicación
+      description: ¿Qué parte de la suite está afectada?
       options:
-        - GenOffice Docs (docs)
-        - GenOffice Sheets (sheets)
-        - GenOffice Slides (slides)
-        - GenOffice PDF (pdf)
-        - GenOffice Markdown (markdown)
-        - Shell / home screen
-        - AI panel / providers
-        - Build / packaging
-        - Other
+        - duo180 Docs (docs)
+        - duo180 Sheets (sheets)
+        - duo180 Slides (slides)
+        - duo180 PDF (pdf)
+        - duo180 Markdown (markdown)
+        - duo180 HTML (html)
+        - Contenedor / pantalla de inicio
+        - Compilación / empaquetado
+        - Otro
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: Version and OS
-      description: App version (or commit) and operating system
-      placeholder: '0.1.0 on macOS 15.3 / Windows 11'
+      label: Versión y sistema
+      description: Versión de la app (o commit) y sistema operativo
+      placeholder: '0.1.0 en Windows 11 / macOS 15.3 / Ubuntu 24.04'
     validations:
       required: true
   - type: textarea
     id: what-happened
     attributes:
-      label: What happened?
+      label: ¿Qué ha pasado?
       description: >
-        What did you do, what did you expect, and what happened instead?
-        If a document triggers the bug, attach a minimal sample file if
-        possible (please remove anything confidential first).
-      placeholder: Steps to reproduce, expected behavior, actual behavior.
+        ¿Qué hiciste, qué esperabas que ocurriera y qué ocurrió en realidad?
+        Si el error lo provoca un documento, adjunta un archivo de ejemplo
+        mínimo si es posible (elimina antes cualquier contenido confidencial).
+      placeholder: Pasos para reproducirlo, comportamiento esperado, comportamiento real.
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
-      label: Logs / screenshots
-      description: Console output, stack traces, or screenshots, if any.
+      label: Registros / capturas
+      description: Salida de consola, trazas de error o capturas de pantalla, si los tienes.
+    validations:
+      required: false

@@ -7,12 +7,10 @@ import {
   createDocsView,
   docsQueryDirty,
   markDocsNewBlank,
-  queueDocsAiContent,
   requestDocsClose,
   setActiveDocsResolver,
   teardownDocsRenderer,
 } from '../../../docs/src/main/docs-main'
-import type { AiDocContent } from '../../../docs/src/shared/ipc'
 import {
   createMarkdownView,
   markdownIsDirty,
@@ -99,7 +97,6 @@ export class TabManager {
     // then once more on the next tick. On Linux/X11, `resize` fires before the
     // window manager applies the new size, so getContentBounds() is still the
     // pre-maximize size inside the handler and a follow-up layout is required.
-    // See https://github.com/genspark-ai/genoffice/issues/15
     shellWindow.on('resize', () => {
       this.layout()
       setImmediate(() => this.layout())
@@ -257,14 +254,10 @@ export class TabManager {
     this.activateTab(HOME_ID)
   }
 
-  openDocsTab(
-    openPath?: string,
-    options?: { newBlank?: boolean; aiContent?: AiDocContent },
-  ): string {
+  openDocsTab(openPath?: string, options?: { newBlank?: boolean }): string {
     const view = createDocsView(openPath)
     const id = `t${this.nextId++}`
     if (options?.newBlank) markDocsNewBlank(view.webContents.id)
-    if (options?.aiContent) queueDocsAiContent(view.webContents.id, options.aiContent)
     this.shellWindow.contentView.addChildView(view)
     view.setVisible(false)
     this.trackHtmlFullScreen(id, view)
@@ -301,7 +294,7 @@ export class TabManager {
       id,
       kind: 'sheets',
       view,
-      title: openPath ? basename(openPath) : this.untitled('sheets', 'AI Sheets'),
+      title: openPath ? basename(openPath) : this.untitled('sheets', 'Sheets'),
       filePath: openPath,
     })
     this.activateTab(id)
@@ -318,7 +311,7 @@ export class TabManager {
       id,
       kind: 'slides',
       view,
-      title: openPath ? basename(openPath) : this.untitled('slides', 'AI Slides'),
+      title: openPath ? basename(openPath) : this.untitled('slides', 'Slides'),
       filePath: openPath,
     })
     this.activateTab(id)
@@ -355,7 +348,7 @@ export class TabManager {
       id,
       kind: 'markdown',
       view,
-      title: openPath ? basename(openPath) : this.untitled('markdown', 'AI Markdown'),
+      title: openPath ? basename(openPath) : this.untitled('markdown', 'Markdown'),
       filePath: openPath,
     })
     this.activateTab(id)
@@ -372,7 +365,7 @@ export class TabManager {
       id,
       kind: 'html',
       view,
-      title: openPath ? basename(openPath) : this.untitled('html', 'AI HTML'),
+      title: openPath ? basename(openPath) : this.untitled('html', 'HTML'),
       filePath: openPath,
     })
     this.activateTab(id)
@@ -390,7 +383,7 @@ export class TabManager {
       id,
       kind: 'html',
       view,
-      title: title || this.untitled('html', 'AI HTML'),
+      title: title || this.untitled('html', 'HTML'),
       present: true,
     })
     this.activateTab(id)
@@ -464,7 +457,7 @@ export class TabManager {
     this.onChanged()
   }
 
-  /** an untitled document named itself before its first save (html: from the first AI request) */
+  /** an untitled document named itself before its first save (html: from the first title request) */
   setTabTitleFor(webContentsId: number, title: string): void {
     const tab = this.tabs.find((t) => t.view?.webContents.id === webContentsId)
     if (!tab || tab.filePath || tab.title === title) return

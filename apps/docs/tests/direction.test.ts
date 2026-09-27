@@ -364,16 +364,7 @@ describe('ribbon direction buttons carry translated aria-labels', () => {
   })
 })
 
-describe('ai panel messages follow their own content direction', () => {
-  it('renders historic, live assistant, and user text with dir=auto', () => {
-    // Panel chrome follows the UI language; message text must follow its own
-    // content, so every message body carries dir="auto" (markup contract in
-    // source, no browser needed)
-    const panel = readFileSync(join(__dirname, '../src/renderer/ai/AiPanel.tsx'), 'utf8')
-    const hits = panel.match(/dir="auto"/g) ?? []
-    expect(hits.length).toBeGreaterThanOrEqual(3)
-  })
-
+describe('message text follows its own content direction (dir=auto)', () => {
   it('resolves dir=auto message direction from the first strong character', () => {
     expect(firstStrongDir('שלום, how are you?')).toBe('rtl')
     expect(firstStrongDir('How are you, שלום?')).toBe('ltr')

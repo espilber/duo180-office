@@ -166,7 +166,6 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   // ---- Review & tools ----
   { id: 'track-changes', group: 'review', labelKey: 'ribbonTrackChanges', keys: '⇧⌘E' },
   { id: 'word-count', group: 'review', labelKey: 'appWordCountTitle', keys: '⇧⌘G' },
-  { id: 'proofread', group: 'review', labelKey: 'appScProofread', keys: 'F7' },
   { id: 'update-fields', group: 'review', labelKey: 'appUpdateField', keys: 'F9' },
   { id: 'toggle-field-codes', group: 'review', labelKey: 'appToggleFieldCodes', keys: '⌥F9' },
 

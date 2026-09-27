@@ -1,77 +1,86 @@
 # CLAUDE.md
 
-Guidance for AI agents and human contributors working in this repo.
+Guía para agentes de IA y personas que trabajen en este repositorio.
 
-This is **duo180 Office**, a fork of GenOffice (Apache-2.0) that works towards a
-simplified office suite without the original AI layer. The engine layer is
-unchanged; contributor-facing notes live in [CONTRIBUTING.md](CONTRIBUTING.md).
+Esto es **duo180 Office**, un fork de GenOffice (Apache-2.0) que avanza hacia
+una suite ofimática más sencilla, sin la capa de IA del proyecto original. La
+capa de motores no cambia respecto al original; las notas para contribuir están
+en [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Repository-specific notes
+## Notas propias de este repositorio
 
-- There is no in-app AI: no chat panels, no model providers, no agent tool
-  registries and no MCP/CLI control bridge. Do not reintroduce model calls in
-  the apps.
-- The document edit-op layer that the ribbon, dialogs and tests share lives in
-  `apps/docs/src/renderer/ops/` (ops registry, table/field/style/note/comment
-  ops, HTML-fragment parsing, track-change application). It is **not** AI code:
-  keep it UI-agnostic and model-agnostic.
-- Local file search (index over names, folders and extracted text) is a
-  product feature, not AI: it is powered by `packages/file-parse` and the
-  shell's `src/main/file-index/`. Keep it working.
+- No hay IA dentro de las aplicaciones: ni paneles de chat, ni proveedores de
+  modelos, ni registros de herramientas de agentes, ni puentes de control
+  MCP/CLI. No reintroduzcas llamadas a modelos en las apps.
+- La capa de operaciones de edición que comparten la ribbon, los diálogos y los
+  tests vive en `apps/docs/src/renderer/ops/` (registro de operaciones,
+  operaciones de tabla/campos/estilos/notas/comentarios, análisis de fragmentos
+  HTML y aplicación de cambios con control de cambios). **No** es código de IA:
+  manténla independiente de la interfaz y de cualquier modelo.
+- La búsqueda local de archivos (índice sobre nombres, carpetas y texto
+  extraído) es una función del producto, no IA: se apoya en
+  `packages/file-parse` y en `apps/shell/src/main/file-index/`. Mantenla
+  funcionando.
 
-## Theming rules (mandatory)
+## Reglas de tematización (obligatorias)
 
-The suite supports light / dark / system UI themes. The switching mechanism is a
-`data-theme` attribute on `<html>` plus CSS custom properties defined once in
-`packages/ui/src/tokens.css` (light defaults in `:root`, overrides in
-`[data-theme='dark']`, and a `prefers-color-scheme` media-query fallback for
-system mode).
+La suite soporta temas de interfaz claro / oscuro / sistema. El mecanismo de
+cambio es un atributo `data-theme` en `<html>` más propiedades personalizadas
+de CSS definidas una sola vez en `packages/ui/src/tokens.css` (valores claros
+por defecto en `:root`, variantes en `[data-theme='dark']` y un respaldo por
+media query `prefers-color-scheme` para el modo sistema).
 
-1. **UI chrome colors must use semantic tokens.** Never write raw `#hex` /
-   `rgb()` in renderer CSS rules or chrome-related inline styles — reference
-   `var(--surface)`, `var(--text)`, `var(--hover)`, etc. from
-   `packages/ui/src/tokens.css`. Raw values are allowed only on custom-property
-   definition lines (`--x: #...;` — token, accent, or app-scoped variable
-   definitions). CI enforces this for new/changed renderer CSS lines
+1. **Los colores de la interfaz deben usar tokens semánticos.** No escribas
+   `#hex` / `rgb()` en crudo en las reglas CSS del renderer ni en estilos
+   inline de la interfaz: usa `var(--surface)`, `var(--text)`, `var(--hover)`,
+   etc. de `packages/ui/src/tokens.css`. Los valores en crudo solo se permiten
+   en las líneas que definen una propiedad personalizada (`--x: #...;`).
+   La integración continua lo comprueba en las líneas nuevas o cambiadas
    (`tools/check-theme-colors.mjs`).
-2. **Every new token gets both values.** Adding a token means adding it to all
-   three blocks in `tokens.css` (light, dark, system-dark fallback).
-3. **Accent colors stay per-app.** Each app defines `--accent` /
-   `--accent-dark` / `--accent-soft` (and its dark-adjusted values) in its own
-   `styles.css`. Shared rules reference `var(--accent)` and inherit the app's
-   brand color.
-4. **Document content is never re-authored by the theme.** Page surfaces, cell
-   fills, slide content, PDF page bitmaps, export/print stylesheets, chart
-   palettes, highlight color maps, stamps, and WordArt presets are document
-   data: they stay hardcoded, must not reference chrome tokens, and every
-   save/export/print path must produce identical output in both themes. A
-   Word/Excel-style _dark page_ (Sheets via Univer's `darkMode`, Docs via
-   `apps/docs/src/renderer/editor/dark-page.ts`) is a display-time remap only:
-   the authored color stays the real declaration, the remapped twin lives in
-   a screen-only `--dk-*` / `.page-dark` layer, and print/export never see it.
-5. **Canvas-drawn UI affordances go through a constants table.** Konva/canvas
-   editing chrome (selection frames, guides, handles) reads from the app's
-   canvas color table (e.g. `canvas-colors.ts`) keyed by the current theme —
-   no inline hex in draw calls.
+2. **Todo token nuevo lleva sus dos valores.** Añadir un token significa
+   añadirlo a los tres bloques de `tokens.css` (claro, oscuro y respaldo del
+   sistema en oscuro).
+3. **Los colores de acento son de cada app.** Cada app define `--accent` /
+   `--accent-dark` / `--accent-soft` (y sus variantes oscuras) en su propio
+   `styles.css`. Las reglas compartidas referencian `var(--accent)` y heredan
+   el color de marca de la app.
+4. **El tema nunca reescribe el contenido del documento.** Superficies de
+   página, rellenos de celda, contenido de diapositivas, mapas de bits de
+   páginas PDF, hojas de estilo de exportación e impresión, paletas de
+   gráficos, mapas de colores de resaltado, sellos y ajustes prediseñados de
+   WordArt son datos del documento: se quedan fijos, no deben referenciar
+   tokens de la interfaz y toda ruta de guardar/exportar/imprimir debe producir
+   el mismo resultado en ambos temas. Una _página oscura_ al estilo de
+   Word/Excel (Sheets mediante `darkMode` de Univer, Docs mediante
+   `apps/docs/src/renderer/editor/dark-page.ts`) es solo una transformación de
+   visualización: el color declarado sigue siendo el real, su gemelo
+   transformado vive en una capa `--dk-*` / `.page-dark` solo para pantalla, y
+   ni la impresión ni la exportación la ven.
+5. **Los elementos dibujados en canvas pasan por una tabla de constantes.** Los
+   adornos de edición en Konva/canvas (marcos de selección, guías, tiradores)
+   se leen de la tabla de colores de canvas de cada app (por ejemplo
+   `canvas-colors.ts`), indexada por el tema actual: nada de hex en crudo en
+   las llamadas de dibujo.
 
-## Build gotchas
+## Trampas de compilación
 
-- App main-process code (`apps/*/src/main`) is compiled into the **shell**
-  build. After changing it, rebuild the shell or the change silently does not
-  run.
-- In dev mode, preload changes require a rebuild — a stale preload leaves the
-  renderer blank.
-- Workspace packages listed in an app's `dependencies` must also be added to
-  the `externalizeDepsPlugin` `exclude` list, or the packaged app crashes on
-  launch.
-- `useI18n()`'s `t` is not referentially stable; never put it in a hook
-  dependency array. Store the key and translate at render time.
+- El código del proceso principal de cada app (`apps/*/src/main`) se compila
+  dentro de la build del **shell**. Tras cambiarlo hay que recompilar el shell,
+  o el cambio no se ejecuta y no te darás cuenta.
+- En modo desarrollo, los cambios de preload necesitan recompilación: un
+  preload obsoleto deja el renderer en blanco.
+- Los paquetes del workspace que aparecen en las `dependencies` de una app
+  también deben estar en la lista `exclude` de `externalizeDepsPlugin`, o la
+  app empaquetada falla al arrancar.
+- El `t` de `useI18n()` no es referencialmente estable: no lo pongas nunca en
+  el array de dependencias de un hook. Guarda la clave y traduce al renderizar.
 
-## UI strings (i18n)
+## Textos de interfaz (i18n)
 
-- Large dictionaries are sharded per locale: `i18n/strings-<domain>.ts` is a
-  thin aggregator over `i18n/<domain>/<lang>.ts` (one file per language, `zh`
-  defines the key set). Add a new key to `zh.ts` and to every sibling shard;
-  the `satisfies Record<keyof typeof zh, string>` on each shard turns a
-  missing or extra key into a type error. Never grow the aggregator back into
-  a single multi-locale object.
+- Los diccionarios grandes están troceados por idioma:
+  `i18n/strings-<dominio>.ts` es un agregador fino sobre
+  `i18n/<dominio>/<idioma>.ts` (un archivo por idioma y `zh` define el conjunto
+  de claves). Añade una clave nueva a `zh.ts` y a cada archivo hermano; el
+  `satisfies Record<keyof typeof zh, string>` de cada archivo convierte una
+  clave que falta o sobra en un error de tipos. No vuelvas a convertir el
+  agregador en un único objeto con todos los idiomas.

@@ -3,7 +3,7 @@ import { Editor } from '@tiptap/core'
 import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 import { parseDocx, saveDocx } from '@genoffice/docx-engine'
 import { buildDocx } from '../../../packages/docx-engine/tests/helpers/build-docx'
-import { executeOps } from '../src/renderer/ai/ops'
+import { executeOps } from '../src/renderer/ops/ops'
 import { blocksToPmDoc, pmDocToSavePlan, type PmNode } from '../src/renderer/editor/convert'
 import { editorExtensions } from '../src/renderer/editor/extensions'
 

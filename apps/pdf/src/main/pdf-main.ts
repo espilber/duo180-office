@@ -28,7 +28,6 @@ import {
   rendererUrl,
 } from '@genoffice/electron-utils'
 import { createI18n, getUiLang } from '@genoffice/i18n'
-import { generateImageTool } from '@genoffice/ai-search'
 import { PDF_CHANNELS } from '../shared/ipc'
 import { buildExportImagePaths, hasValidExportPageNumbers } from './export-images'
 import type {
@@ -553,7 +552,7 @@ async function createStandaloneDocument(
   if (request.type === 'docx') {
     return {
       ok: false,
-      error: 'Creating DOCX files requires the GenOffice shell or Docs app.',
+      error: 'Creating DOCX files requires the duo180 Office shell or Docs app.',
     }
   }
   const title = sanitizeGeneratedDocumentTitle(request.title)
@@ -1509,17 +1508,7 @@ function registerPdfIpc(): void {
     },
   )
 
-  // pdf-owned (unlike ai:image-search / ai:fetch-image, which the shell registers app-wide):
-  // slides' ai:generate-image is only registered once a slides view exists, so pdf needs its own
-  ipcMain.handle(
-    PDF_CHANNELS.generateImage,
-    (_e, op: { prompt?: unknown; aspectRatio?: unknown }) =>
-      generateImageTool(join(app.getPath('userData'), 'ai-settings.json'), {
-        prompt: String(op?.prompt ?? ''),
-        aspectRatio: op?.aspectRatio ? String(op.aspectRatio) : undefined,
-      }),
-  )
-
+  // pdf-owned (the shared ai:* handlers were shell-registered app-wide)
   ipcMain.handle(PDF_CHANNELS.listSignatures, () => withSignatures(async (list) => list))
 
   ipcMain.handle(PDF_CHANNELS.addSignature, (_e, data: unknown) =>

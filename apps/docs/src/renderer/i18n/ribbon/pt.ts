@@ -1,9 +1,6 @@
 import type { zh } from './zh'
 
 export const pt = {
-  ribbonAiCreditNote: 'Usa IA e consome créditos',
-  ribbonAiRewriteConfirm:
-    'Esta ação chama a IA: consome créditos e pode reescrever todo o conteúdo. Continuar? (Não será perguntado novamente.)',
   ribbonTabFile: 'Arquivo',
   ribbonTabHome: 'Página Inicial',
   ribbonTabInsert: 'Inserir',
@@ -184,8 +181,6 @@ export const pt = {
   ribbonReplaceTip: 'Localizar e substituir texto',
   ribbonSelectAll: 'Selecionar tudo',
   ribbonSelectAllTip: 'Selecionar o documento inteiro',
-  ribbonAiAssistant: 'Genspark',
-  ribbonAiAssistantTip: 'Abrir o assistente de IA',
   ribbonRemoveTableStyleTip: 'Remover estilo da tabela',
   ribbonNoStyle: 'Sem Estilo',
   ribbonApplyTableStyleTip: 'Aplicar estilo de tabela {name}',
@@ -654,31 +649,10 @@ export const pt = {
   ribbonSourceJournalName: 'Nome do Periódico',
   ribbonSourceSiteName: 'Nome do Site',
   ribbonSourcePublisher: 'Editora',
-  ribbonEditorBtn: 'Editor',
-  ribbonEditorTip: 'A IA verifica ortografia, gramática e pontuação',
-  ribbonEditorPrompt:
-    'Revise todo o documento: corrija erros de digitação, pontuação e gramática mantendo o sentido original e a estrutura dos parágrafos.',
   ribbonGroupProofing: 'Revisão de Texto',
   ribbonSpellcheckBtn: 'Ortografia',
   ribbonSpellcheckTip:
     'Verificar a ortografia ao digitar — sublinha em vermelho palavras possivelmente erradas',
-  ribbonTranslate: 'Traduzir',
-  ribbonTranslateTip: 'A IA traduz o documento',
-  ribbonTranslatePrompt:
-    'Traduza todo o documento para {lang}, mantendo a estrutura dos parágrafos e os níveis de títulos.',
-  ribbonTranslateSelectionPrompt:
-    'Traduza o conteúdo selecionado para {lang}, mantendo a estrutura dos parágrafos.',
-  ribbonEditorSelectionPrompt:
-    'Revise o conteúdo selecionado: corrija erros de digitação, pontuação e gramática mantendo o sentido original e a estrutura dos parágrafos.',
-  ribbonTranslateTo: 'Traduzir para {lang}',
-  ribbonLangEnglish: 'inglês',
-  ribbonLangSimplifiedChinese: 'chinês simplificado',
-  ribbonLangJapanese: 'japonês',
-  ribbonLangKorean: 'coreano',
-  ribbonLangFrench: 'francês',
-  ribbonLangGerman: 'alemão',
-  ribbonLangSpanish: 'espanhol',
-  ribbonGroupLanguage: 'Idioma',
   ribbonNewComment: 'Novo Comentário',
   ribbonNewCommentTip: 'Adicionar um comentário à seleção',
   ribbonNewCommentSelectTip: 'Selecione primeiro o texto a comentar',
@@ -691,16 +665,6 @@ export const pt = {
   ribbonPrevCommentTip: 'Ir para o comentário anterior',
   ribbonNextComment: 'Próximo',
   ribbonNextCommentTip: 'Ir para o próximo comentário',
-  ribbonAiComments: 'Comentários com IA',
-  ribbonAiRevisions: 'Resumo de revisões com IA',
-  ribbonAiRevisionsTip:
-    'A IA lê as {count} revisões pendentes, resume as mudanças por seção e sinaliza riscos',
-  ribbonAiRevisionsPrompt:
-    'Resuma todas as revisões pendentes do documento: comece com estatísticas gerais (número de inserções/exclusões, autores, intervalo de datas), depois descreva as mudanças seção por seção (cite os índices de bloco) e termine com os pontos de atenção (obrigações ou ressalvas excluídas, números/datas/valores alterados). Apenas resuma — não modifique o documento nem aceite/rejeite nenhuma revisão.',
-  ribbonAiCommentsTip:
-    'A IA processa os {count} comentários não resolvidos: edita, responde e resolve',
-  ribbonAiCommentsPrompt:
-    'Trate todos os comentários não resolvidos do documento: para cada um, aplique a alteração pedida, responda descrevendo a mudança e marque-o como resolvido; se um comentário for uma pergunta ou for ambíguo, responda sem alterar o documento.',
   ribbonShowCommentsTip: 'Mostrar comentários ({count})',
   ribbonTrackChanges: 'Controlar Alterações',
   ribbonTrackChangesTip:
@@ -812,8 +776,6 @@ export const pt = {
   ribbonWholePage: 'Uma Página',
   ribbonWholePageTip: 'Aplicar zoom para que a página inteira caiba na janela',
   ribbonGroupZoom: 'Zoom',
-  ribbonAiPanel: 'Painel de IA',
-  ribbonAiPanelTip: 'Mostrar/ocultar o painel de IA',
   ribbonDarkMode: 'Modo Escuro',
   ribbonDarkModeTip: 'Exibir a área de edição em cores escuras sem alterar o documento',
   ribbonGroupShow: 'Mostrar',

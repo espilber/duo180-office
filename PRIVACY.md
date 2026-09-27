@@ -1,70 +1,59 @@
-# GenOffice Privacy
+# Privacidad de duo180 Office
 
-Last updated: August 26, 2026
+Última actualización: 27 de septiembre de 2026
 
-GenOffice opens, edits, and saves documents locally. Document editing does not
-upload files to GenOffice. AI features require a network connection and send
-requests only when you use them.
+duo180 Office es un fork de [GenOffice](https://github.com/genspark-ai/genoffice).
+Este documento describe lo que hace la compilación de duo180, no lo que hace el
+proyecto original.
 
-## Usage analytics
+## Tus documentos se quedan en tu equipo
 
-Usage analytics is enabled by default in packaged official builds, including
-the initial app launch before the onboarding notice is shown. Onboarding
-explains what is collected and where to turn it off.
+Abrir, editar y guardar documentos es local. Tus archivos `.docx`, `.xlsx`,
+`.pptx`, PDF, Markdown y HTML se leen y se escriben en tu disco y la aplicación
+no los sube a ningún sitio.
 
-You can disable reporting at any time under **Settings → General → Send
-anonymous usage statistics**. An explicit opt-out is remembered and stops all
-subsequent analytics events.
+El índice de búsqueda local de archivos (nombres, carpetas y texto extraído, en
+una base de datos SQLite) se construye y se consulta en tu equipo. Nunca sale
+de él.
 
-### Events and parameters
+## Sin IA y sin cuentas
 
-When enabled, the app sends these events:
+Esta compilación no tiene funciones de IA: ni proveedores de modelos, ni panel
+de chat, ni inicio de sesión. No habla con ningún servicio de IA y no necesita
+ninguna clave de API.
 
-- `install_first_launch` — marks the first analytics-enabled use of a newly
-  assigned anonymous `client_id`; used for retention cohorts
-- `app_launch` — no event-specific parameter
-- `file_open` — `ext`, the file extension such as `docx` or `xlsx`
-- `file_new` — `kind`, one of `docx`, `xlsx`, `pptx`, `md`, or `pdf`
-- `login_click` — no event-specific parameter
-- `login_success` — no event-specific parameter
+## Sin analítica de uso
 
-Every event includes:
+Esta compilación **no incluye analítica de uso, telemetría, informes de errores
+ni identificadores publicitarios**. No se envía al proyecto duo180 ni a
+terceros nada sobre cómo usas la aplicación, así que no hay ningún ajuste de
+analítica que desactivar.
 
-- `app_version`
-- `platform`
-- `os_version`
-- `ui_lang`
-- a per-process `session_id` derived from the process start time
-- `engagement_time_msec` with the fixed value `100`
+## Acceso a la red
 
-When available, the payload also includes `country_id`, the two-letter country
-code from the operating system's regional locale. This can differ from the
-user's physical location.
+La aplicación no hace peticiones de red para trabajar con tus documentos. El
+único tráfico saliente que inicia es:
 
-The Google Analytics 4 payload also uses a random install UUID as `client_id`.
-The country code is sent through GA4's country-only `user_location` field; the
-app does not send a city or region. Neither identifier is a Genspark account or
-email address.
+- **Comprobación de actualizaciones.** La app puede preguntar a GitHub Releases
+  por la última versión publicada para avisarte de si hay una actualización.
+  Es una petición HTTPS normal a `github.com`, no lleva datos de documentos y
+  se puede desactivar.
+- **Enlaces que abres.** Al abrir un hipervínculo de un documento, la URL pasa
+  a tu navegador del sistema a través de una lista blanca (http/https; las
+  anotaciones de PDF permiten además `mailto`). Los esquemas `file:`,
+  `javascript:` y personalizados se rechazan.
 
-## Network information
+Si compilas desde el código fuente, puedes verificar todo lo anterior en este
+repositorio.
 
-Events are sent to Google Analytics 4 using the Measurement Protocol over
-HTTPS. As the HTTPS recipient, Google necessarily sees the connection's public
-IP address and transport metadata, and may use them for coarse geolocation and
-security or spam-abuse processing. GenOffice does not add an IP address to the
-event payload.
+## Lo que nunca se envía
 
-## Data not collected by analytics
+- el contenido de los documentos
+- nombres o rutas de archivos
+- una identidad, cuenta o dirección de correo
+- un identificador de dispositivo o de instalación
 
-GenOffice analytics never sends:
+## Cambios
 
-- document content
-- file names
-- file paths
-- Genspark account identity
-- email addresses
-
-The analytics metadata is injected only into packaged official builds and is
-not part of this repository. Source builds and forks without that packaged
-metadata install a no-op tracker and send no usage analytics; all features work
-the same.
+Si esta política cambia, la actualización llegará a este mismo archivo con una
+fecha nueva.

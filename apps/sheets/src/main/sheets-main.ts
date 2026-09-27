@@ -56,43 +56,12 @@ import {
   writeJsonAtomic,
 } from '@genoffice/electron-utils'
 import { createI18n, getUiLang, type Lang, normalizeLang, setUiLang } from '@genoffice/i18n'
-import { ProjectStore } from '@genoffice/project-store'
 
-import {
-  AiCreditsError,
-  AiTimeoutError,
-  isAiNetworkError,
-  isAiOverloadedError,
-  chatForProvider,
-  defaultAiSettings,
-  activeProvider,
-  maxOutputTokensOf,
-  resolveAiSettings,
-  setAiUserAgent,
-  setRescueFetch,
-  streamForProvider,
-  type AiProviderId,
-  type AiSettings,
-  type AiStreamChunk,
-  type GenSparkAccountStatus,
-  type LegacyAiSettings,
-} from '@genoffice/ai-provider'
-import { shutdownCodexAppServers } from '@genoffice/ai-provider/codex-app-server'
 import {
   csvToXlsxBufferForOpen,
   decodeCsvBuffer,
   sheetCsvToXlsxBuffer,
 } from '@genoffice/xlsx-gateway/gateway/csv-import'
-import {
-  ensureGenofficeLogin,
-  gskApiKey,
-  gskLoginInfo,
-  hasGskAuth,
-  setGskProxyUrl,
-  webSearchTool,
-  imageSearchTool,
-  generateImageTool,
-} from '@genoffice/ai-search'
 import { parseFileToText } from '@genoffice/file-parse'
 import type { CellEdit, SheetStructuralOps } from '@genoffice/xlsx-gateway/gateway/xlsx-gateway'
 import {
@@ -110,9 +79,6 @@ import type {
 } from '../shared/desktop-api'
 import {
   ATTACHMENT_IMAGE_EXTS,
-  aiChatRequestSchema,
-  aiSettingsInputSchema,
-  aiStreamRequestSchema,
   workbookFileSchema,
   workbookFormulaCellsRequestSchema,
   workbookFormulaCellsResultSchema,
@@ -127,7 +93,6 @@ import {
   screenCaptureResultSchema,
   screenSourcesResultSchema,
   workbookPivotDefinitionSchema,
-  workbookCreateDocumentRequestSchema,
   workbookExportCsvRequestSchema,
   workbookExportPdfRequestSchema,
   workbookRangeRequestSchema,
@@ -137,7 +102,6 @@ import {
   saveEditsChunkArraySchema,
   workbookSaveEditsChunkSchema,
   workbookSaveRequestSchema,
-  type WorkbookCreateDocumentResult,
   type WorkbookSaveRequest,
 } from '../shared/desktop-api'
 import { IPC_CHANNELS } from '../shared/ipc-channels'
@@ -1436,14 +1400,6 @@ interface SessionInfo {
 
 // ---- runtime configuration (paths differ when bundled into the shell) ----
 
-/** AI create_document content the sheets app cannot build itself — the shell
- * routes it into the docs-owned creation flow (docx opens a fresh docs tab). */
-export interface SheetsAiHostDocumentRequest {
-  type: 'docx' | 'pdf' | 'md' | 'html'
-  title: string
-  content: string
-}
-
 interface SheetsRuntimeConfig {
   /** absolute path to the sheets preload bundle */
   preloadPath: string
@@ -1453,26 +1409,23 @@ interface SheetsRuntimeConfig {
   rendererFile: string
   /** absolute path to the Rust xlsx-sidecar binary */
   sidecarPath?: string | undefined
-  /** Shell router used to open exported/AI-generated files in a new GenOffice tab. */
+  /** Shell router used to open exported files in a new GenOffice tab. */
   openGeneratedPath?: (path: string) => boolean
-  /** Host-owned cross-app document creator (the shell routes docx/pdf/md into Docs). */
-  createDocument?: (request: SheetsAiHostDocumentRequest) => Promise<WorkbookCreateDocumentResult>
 }
 
 let runtime: SheetsRuntimeConfig = {
   preloadPath: join(__dirname, '../preload/index.js'),
   rendererUrl: process.env.ELECTRON_RENDERER_URL,
   rendererFile: join(__dirname, '../renderer/index.html'),
-  createDocument: createStandaloneSheetsDocument,
 }
 
 export function configureSheetsRuntime(config: SheetsRuntimeConfig): void {
   runtime = config
 }
 
-/** After writing an exported/AI-generated file: open it in the right tab
- * (shell) or reveal it in the folder (standalone). Tab-opening failure must
- * not report the write itself as failed — the file is already persisted. */
+/** After writing an exported file: open it in the right tab
+ *  (shell) or reveal it in the folder (standalone). Tab-opening failure must
+ *  not report the write itself as failed - the file is already persisted. */
 function openGeneratedFile(path: string): void {
   try {
     if (runtime.openGeneratedPath?.(path)) return
@@ -1482,7 +1435,7 @@ function openGeneratedFile(path: string): void {
   shell.showItemInFolder(path)
 }
 
-/** Pick a safe file-name stem for an AI-created file (mirrors docs' sanitizeAiDocFileBase). */
+/** Pick a safe file-name stem for a generated file. */
 export function sanitizeGeneratedFileBase(title: string): string {
   const cleaned = String(title ?? '')
     // eslint-disable-next-line no-control-regex -- generated file names must reject controls
@@ -1501,37 +1454,6 @@ export function uniquePathIn(dir: string, fileName: string): string {
   let candidate = join(dir, fileName)
   for (let i = 2; existsSync(candidate); i++) candidate = join(dir, `${base}-${i}${ext}`)
   return candidate
-}
-
-/** Standalone-window fallback for AI docx/pdf/md/html creation (mirrors pdf-main's
- * createStandaloneDocument): pdf renders in a hidden sandboxed window, md/html
- * write the source as-is; docx needs the Docs app and is refused. */
-async function createStandaloneSheetsDocument(
-  request: SheetsAiHostDocumentRequest,
-): Promise<WorkbookCreateDocumentResult> {
-  if (request.type === 'docx') {
-    return { ok: false, error: 'Creating DOCX files requires the GenOffice shell or Docs app.' }
-  }
-  const title = sanitizeGeneratedFileBase(request.title)
-  try {
-    if (request.type === 'pdf') {
-      const bytes = await printHtmlToPdf(
-        buildPrintableHtml(title, request.content),
-        () =>
-          new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false } }),
-      )
-      const path = uniquePathIn(configuredDefaultSaveDir(app), `${title}.pdf`)
-      await writeFile(path, bytes)
-      openGeneratedFile(path)
-      return { ok: true, path }
-    }
-    const path = uniquePathIn(configuredDefaultSaveDir(app), `${title}.${request.type}`)
-    await writeFile(path, request.content, 'utf8')
-    openGeneratedFile(path)
-    return { ok: true, path }
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) }
-  }
 }
 
 let mainWindow: BrowserWindow | null = null
@@ -1562,7 +1484,6 @@ interface SheetsTabSession {
   readonly webContents: WebContents
   readonly client: XlsxSidecarClient
   readonly sessions: Map<string, SessionInfo>
-  readonly aiStreams: Map<string, AbortController>
   /// Chunked uploads of large saves' cell edits, pending their save request.
   readonly saveTransfers: SaveEditsTransferStore
 }
@@ -1629,7 +1550,6 @@ function registerSheetsSession(webContents: WebContents, client: XlsxSidecarClie
     webContents,
     client,
     sessions: new Map(),
-    aiStreams: new Map(),
     saveTransfers: new SaveEditsTransferStore(),
   })
   activeSheetsWebContents = webContents
@@ -1941,6 +1861,7 @@ const sidecarOpenResultSchema = workbookFileSchema.omit({
 })
 
 export async function createSheetsWindow(
+  /** includeAiHandlers: no-op kept for existing call sites (the AI IPC layer is gone). */
   options: { includeAiHandlers?: boolean } = {},
 ): Promise<BrowserWindow> {
   const client = sidecar ?? new XlsxSidecarClient(resolveSidecarPath())
@@ -1965,8 +1886,6 @@ export async function createSheetsWindow(
   })
   mainWindow = window
   registerSheetsIpc()
-  if (options.includeAiHandlers ?? true) registerSheetsAiIpc()
-  if (options.includeAiHandlers ?? true) registerProjectIpc()
   registerSheetsSession(window.webContents, client)
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   window.webContents.on('will-navigate', (event) => event.preventDefault())
@@ -2068,6 +1987,7 @@ export async function exportSheetsPdfHeadless(
 
 /** tab-mode equivalent of createSheetsWindow: same runtime/IPC wiring, no BrowserWindow of its own. */
 export function createSheetsView(
+  /** includeAiHandlers: no-op kept for existing call sites (the AI IPC layer is gone). */
   options: { includeAiHandlers?: boolean; openingWorkbook?: boolean } = {},
 ): WebContentsView {
   const client = sidecar ?? new XlsxSidecarClient(resolveSidecarPath())
@@ -2083,7 +2003,6 @@ export function createSheetsView(
     },
   })
   registerSheetsIpc()
-  if (options.includeAiHandlers ?? true) registerSheetsAiIpc()
   registerSheetsSession(view.webContents, client)
   view.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   view.webContents.on('will-navigate', (event) => event.preventDefault())
@@ -2103,7 +2022,7 @@ export function createSheetsView(
   return view
 }
 
-// ---- Chat attachments: local files parsed and fed to the agent (copied from
+// ---- Attachments: local files parsed for text extraction (copied from
 // the apps/docs docs-main attachment pipeline) ----
 
 const ATTACHMENT_MAX_BYTES = 50 * 1024 * 1024
@@ -2322,18 +2241,6 @@ let coreIpcRegistered = false
 export function registerSheetsIpc(): void {
   if (coreIpcRegistered) return
   coreIpcRegistered = true
-
-  // Registered here (not in registerSheetsAiIpc, skipped in shell mode):
-  // slides' ai:generate-image only exists once a slides view opens, so sheets
-  // owns its channel the way pdf does.
-  ipcMain.handle(
-    IPC_CHANNELS.aiGenerateImage,
-    (_event, op: { prompt?: unknown; aspectRatio?: unknown }) =>
-      generateImageTool(SETTINGS_PATH(), {
-        prompt: String(op?.prompt ?? ''),
-        ...(op?.aspectRatio ? { aspectRatio: String(op.aspectRatio) } : {}),
-      }),
-  )
 
   ipcMain.on(IPC_CHANNELS.recoveryPromptReply, (event, restore: unknown) => {
     recoveryPromptWaiters.get(event.sender.id)?.(restore === true ? 'restore' : 'discard')
@@ -2848,49 +2755,6 @@ export function registerSheetsIpc(): void {
     return { canceled: false, path: targetPath }
   })
 
-  // AI create_document: dialog-free — the file lands in the default save
-  // folder under a unique sanitized name and opens in a new tab. xlsx/csv
-  // write the renderer-serialized worksheet data here (xlsx through the same
-  // CSV→xlsx conversion as CSV imports, values only); docx/pdf/md go through
-  // the host-owned creator (the shell routes them into the docs flow, #960).
-  ipcMain.handle(
-    IPC_CHANNELS.createDocument,
-    async (event, input: unknown): Promise<WorkbookCreateDocumentResult> => {
-      sessionFor(event)
-      const request = workbookCreateDocumentRequestSchema.parse(input)
-      try {
-        if (request.type === 'csv') {
-          const filePath = uniquePathIn(
-            configuredDefaultSaveDir(app),
-            `${sanitizeGeneratedFileBase(request.title)}.csv`,
-          )
-          // UTF-8 BOM so Excel decodes the reopened file correctly (same as exportCsv)
-          await atomicWriteFile(
-            filePath,
-            Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(request.content, 'utf8')]),
-          )
-          openGeneratedFile(filePath)
-          return { ok: true, path: filePath }
-        }
-        if (request.type === 'xlsx') {
-          const buffer = await sheetCsvToXlsxBuffer(request.content, request.sheetName ?? 'Sheet1')
-          const filePath = uniquePathIn(
-            configuredDefaultSaveDir(app),
-            `${sanitizeGeneratedFileBase(request.title)}.xlsx`,
-          )
-          await atomicWriteFile(filePath, buffer)
-          openGeneratedFile(filePath)
-          return { ok: true, path: filePath }
-        }
-        const create = runtime.createDocument
-        if (!create) return { ok: false, error: 'Document creation is unavailable in this host.' }
-        return await create({ type: request.type, title: request.title, content: request.content })
-      } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : String(err) }
-      }
-    },
-  )
-
   // First Save of a CSV session: Excel's "keep this format?" question. The
   // renderer remembers the answer for the file, so it is asked once.
   ipcMain.handle(IPC_CHANNELS.csvSaveConfirm, async (event) => {
@@ -3260,197 +3124,13 @@ export function registerSheetsIpc(): void {
         : { accepted: [], rejected: [tm('errNotImage')] }
     },
   )
-}
 
-let aiIpcRegistered = false
-
-export function registerSheetsAiIpc(): void {
-  if (aiIpcRegistered) return
-  aiIpcRegistered = true
-  app.once('before-quit', shutdownCodexAppServers)
-
-  // Node fetch (undici) direct connections get reset under VPN/tun setups; retry over Chromium's stack
-  setRescueFetch((url, init) => net.fetch(url, init))
-  setAiUserAgent(`GenOffice/${app.getVersion()}`)
-
-  ipcMain.handle(IPC_CHANNELS.aiGetSettings, (event): AiSettings => {
-    sessionFor(event)
-    const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
-    const settings = resolveAiSettings(stored, defaultAiSettings())
-    // a stored BYOK provider is honored when usable; half-filled configs fall back to genspark
-    settings.provider = activeProvider(settings)
-    return settings
-  })
-
-  // Genspark account (gsk login state): the auth source for AI features; the
-  // frontend uses it to guide sign-in when logged out
-  ipcMain.handle(
-    IPC_CHANNELS.aiGskStatus,
-    async (_event, withEmail?: unknown): Promise<GenSparkAccountStatus> => {
-      if (!hasGskAuth()) return { loggedIn: false }
-      if (!withEmail) return { loggedIn: true }
-      const info = await gskLoginInfo()
-      return info?.email ? { loggedIn: true, email: info.email } : { loggedIn: true }
-    },
-  )
-
-  ipcMain.handle(IPC_CHANNELS.aiGskLogin, () => {
-    ensureGenofficeLogin((url) => void shell.openExternal(url))
-  })
-
-  ipcMain.handle(IPC_CHANNELS.aiSetSettings, async (event, input: unknown) => {
-    sessionFor(event)
-    const settings = aiSettingsInputSchema.parse(input)
-    writeJsonAtomic(SETTINGS_PATH(), settings)
-  })
-
-  ipcMain.handle(IPC_CHANNELS.aiChat, async (event, input: unknown) => {
-    sessionFor(event)
-    const request = aiChatRequestSchema.parse(input)
-    const provider = request.settings.provider as AiProviderId
-    let config = request.settings.providers[provider]
-    if (provider === 'genspark' && config && !config.apiKey) {
-      config = { ...config, apiKey: gskApiKey() }
-    }
-    if (!config || (provider !== 'codex' && !config.apiKey)) {
-      return {
-        ok: false,
-        error: provider === 'genspark' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
-      }
-    }
-    if (provider !== 'codex' && !config.model) return { ok: false, error: tm('errNoModel') }
-    try {
-      const result = await chatForProvider(provider, config, request.system, request.user)
-      // the one-shot path reports HTTP failures as ok:false with the raw body —
-      // replace capacity/rate-limit dumps with the localized "busy" message
-      if (!result.ok && isAiOverloadedError(result.error)) {
-        return { ok: false, error: tm('errAiBusy') }
-      }
-      return result
-    } catch (err) {
-      return { ok: false, error: isAiOverloadedError(err) ? tm('errAiBusy') : String(err) }
-    }
-  })
-
-  ipcMain.handle(IPC_CHANNELS.aiStream, async (event, input: unknown) => {
-    const entry = sessionFor(event)
-    const request = aiStreamRequestSchema.parse(input)
-    const { requestId, system, messages } = request
-    const tools = request.tools ?? []
-    const maxTokens = request.maxTokens ?? maxOutputTokensOf(request.settings)
-    const provider = request.settings.provider as AiProviderId
-    let config = request.settings.providers[provider]
-    // Genspark's key never enters the settings file; it is read from the gsk
-    // login state per request
-    if (provider === 'genspark' && config && !config.apiKey) {
-      config = { ...config, apiKey: gskApiKey() }
-    }
-    const send = (chunk: AiStreamChunk) => {
-      if (!event.sender.isDestroyed()) event.sender.send(IPC_CHANNELS.aiStreamChunk, chunk)
-    }
-    if (!config || (provider !== 'codex' && !config.apiKey)) {
-      send({
-        requestId,
-        type: 'error',
-        error: provider === 'genspark' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
-      })
-      return
-    }
-    if (provider !== 'codex' && !config.model) {
-      send({ requestId, type: 'error', error: tm('errNoModel') })
-      return
-    }
-    const controller = new AbortController()
-    entry.aiStreams.set(requestId, controller)
-    // wire-activity keepalive: lets the renderer's silence watchdog tell a slow turn from a dead one
-    let lastPing = 0
-    const ping = () => {
-      const now = Date.now()
-      if (now - lastPing < 5_000) return
-      lastPing = now
-      send({ requestId, type: 'ping' })
-    }
-    try {
-      let stopReason: string | undefined
-      await streamForProvider(provider, config, system, messages, tools, maxTokens, {
-        ...(request.sessionId ? { sessionId: request.sessionId } : {}),
-        signal: controller.signal,
-        onDelta: (text) => send({ requestId, type: 'delta', text }),
-        onReasoningDelta: (text) => send({ requestId, type: 'reasoning', text }),
-        onToolCall: (toolCall) => send({ requestId, type: 'tool-call', toolCall }),
-        onActivity: ping,
-        onStopReason: (reason) => {
-          stopReason = reason
-        },
-      })
-      // sheets tsconfig sets exactOptionalPropertyTypes: an explicit
-      // `stopReason: undefined` is not assignable to AiStreamChunk, so only
-      // include the property when a reason was actually reported.
-      send(
-        stopReason === undefined
-          ? { requestId, type: 'done' }
-          : { requestId, type: 'done', stopReason },
-      )
-    } catch (err) {
-      if (controller.signal.aborted) {
-        send({ requestId, type: 'done' })
-      } else {
-        send({
-          requestId,
-          type: 'error',
-          error: err instanceof Error ? err.message : String(err),
-          ...(err instanceof AiTimeoutError
-            ? { errorCode: 'timeout' as const }
-            : err instanceof AiCreditsError
-              ? { errorCode: 'credits' as const }
-              : isAiNetworkError(err)
-                ? { errorCode: 'network' as const }
-                : isAiOverloadedError(err)
-                  ? { errorCode: 'overloaded' as const }
-                  : {}),
-        })
-      }
-    } finally {
-      entry.aiStreams.delete(requestId)
-    }
-  })
-
-  ipcMain.handle(IPC_CHANNELS.aiStreamCancel, (event, requestId: unknown) => {
-    const entry = sessionFor(event)
-    entry.aiStreams.get(z.string().min(1).parse(requestId))?.abort()
-  })
-
-  // Shared search tools (content + images): Serper with DuckDuckGo fallback
-  // (same source as slides/docs)
-  ipcMain.handle('ai:web-search', async (_event, query: unknown, maxResults?: unknown) => {
-    try {
-      return await webSearchTool(
-        SETTINGS_PATH(),
-        z.string().parse(query),
-        typeof maxResults === 'number' ? maxResults : 6,
-      )
-    } catch (err) {
-      return { results: [], method: 'error', error: String(err) }
-    }
-  })
-  ipcMain.handle('ai:image-search', async (_event, query: unknown, maxResults?: unknown) => {
-    try {
-      return await imageSearchTool(
-        SETTINGS_PATH(),
-        z.string().parse(query),
-        typeof maxResults === 'number' ? maxResults : 8,
-      )
-    } catch (err) {
-      return { images: [], method: 'error', error: String(err) }
-    }
-  })
-
-  // Standalone parity with docs-main's shell-wide handler: AI-supplied URLs are
-  // prompt-injectable, so fetchRemoteImage refuses non-http schemes and
+  // Download an image URL for an insert-image op (same source as docs-main's
+  // shell-wide handler): fetchRemoteImage refuses non-http schemes and
   // private/link-local targets and validates every redirect hop. Size-capped to
   // match the local add_image limit.
   ipcMain.handle(
-    'ai:fetch-image',
+    IPC_CHANNELS.fetchImage,
     async (_event, url: unknown): Promise<{ base64: string; mime: string } | null> => {
       try {
         const resp = await fetchRemoteImage(z.string().parse(url))
@@ -3458,8 +3138,8 @@ export function registerSheetsAiIpc(): void {
         const declared = Number(resp.headers.get('content-length') ?? 0)
         if (declared > MAX_REMOTE_IMAGE_BYTES) return null
         // Stream with a running cap: a missing/understated Content-Length must
-        // not let a prompt-injected URL buffer unbounded bytes before a
-        // post-hoc size check
+        // not let a hostile URL buffer unbounded bytes before a post-hoc size
+        // check
         const reader = resp.body.getReader()
         const chunks: Buffer[] = []
         let received = 0
@@ -3488,123 +3168,9 @@ export function registerSheetsAiIpc(): void {
   )
 }
 
-// ── project-store IPC (standalone mode) ────────────────────────────────────
-// In shell mode docs-main.registerProjectIpc has already registered it
-// (idempotency guard).
-
-let sheetsProjectStore: ProjectStore | null = null
-let sheetsProjectIpcRegistered = false
-
-function getSheetsProjectStore(): ProjectStore {
-  if (!sheetsProjectStore) sheetsProjectStore = new ProjectStore(app.getPath('userData'))
-  return sheetsProjectStore
-}
-
-export function registerProjectIpc(): void {
-  if (sheetsProjectIpcRegistered) return
-  sheetsProjectIpcRegistered = true
-
-  ipcMain.handle(
-    'project:resolveChat',
-    (event, args: { filePath: string | null; tempChatId?: string; sessionId?: string }) => {
-      const store = getSheetsProjectStore()
-      store.ensureDefaultProject()
-
-      // sheets mode: reverse-look up the file path via sessionId
-      let resolvedPath = args.filePath
-      if (!resolvedPath && args.sessionId) {
-        const tabEntry = sheetsTabs.get(event.sender.id)
-        if (tabEntry) {
-          resolvedPath = tabEntry.sessions.get(args.sessionId)?.path ?? null
-        }
-      }
-
-      if (!resolvedPath) {
-        return { projectId: 'default', chatId: args.tempChatId ?? `unsaved-${Date.now()}` }
-      }
-      return store.resolveChatForFile(resolvedPath)
-    },
-  )
-
-  ipcMain.handle(
-    'project:appendChat',
-    (
-      _event,
-      args: {
-        projectId: string
-        chatId: string
-        role: 'user' | 'assistant'
-        text: string
-        tools?: Array<{
-          name: string
-          summary: string
-          isError?: boolean
-          input?: string
-          output?: string
-        }>
-        attachments?: Array<{ name: string; path?: string; ext?: string; sizeBytes?: number }>
-        scope?: { label: string; text?: string }
-      },
-    ) => {
-      if (args.role !== 'user' && args.role !== 'assistant') {
-        throw new Error(`Invalid chat role: ${String(args.role)}`)
-      }
-      if (typeof args.text !== 'string' || args.text.length > 200_000) {
-        throw new Error('Invalid chat text: must be a string up to 200000 chars')
-      }
-      if (args.tools && !Array.isArray(args.tools)) throw new Error('Invalid chat tools')
-      if (args.attachments && !Array.isArray(args.attachments)) {
-        throw new Error('Invalid chat attachments')
-      }
-      const msg: Parameters<ProjectStore['appendChatMessage']>[2] = {
-        role: args.role,
-        text: args.text,
-      }
-      if (args.tools) msg.tools = args.tools
-      if (args.attachments) msg.attachments = args.attachments
-      if (args.scope) msg.scope = args.scope
-
-      getSheetsProjectStore().appendChatMessage(args.projectId, args.chatId, msg)
-    },
-  )
-
-  ipcMain.handle(
-    'project:loadChat',
-    (_event, args: { projectId: string; chatId: string; limit?: number }) => {
-      return getSheetsProjectStore().loadChat(args.projectId, args.chatId, args.limit ?? 200)
-    },
-  )
-
-  ipcMain.handle(
-    'project:rebindChat',
-    (
-      event,
-      args: {
-        projectId: string
-        tempChatId: string
-        newChatId?: string
-        newFilePath?: string
-        sessionId?: string
-      },
-    ) => {
-      const store = getSheetsProjectStore()
-      let path = args.newFilePath ?? null
-      if (!path && args.sessionId) {
-        path = resolveSheetsSessionPath(event.sender.id, args.sessionId)
-      }
-      if (path) {
-        return store.rebindChatToFile(args.projectId, args.tempChatId, path)
-      }
-      if (args.newChatId) store.rebindChat(args.projectId, args.tempChatId, args.newChatId)
-      return { projectId: args.projectId, chatId: args.newChatId ?? args.tempChatId }
-    },
-  )
-}
-
 /**
- * sessionId → workbook file path reverse lookup (injected into docs-main's
- * project:resolveChat in shell mode). In standalone mode the handler registered
- * above queries sheetsTabs directly.
+ * sessionId to workbook file path reverse lookup (the shell resolves tab
+ * sessions to their files through it).
  */
 export function resolveSheetsSessionPath(senderId: number, sessionId: string): string | null {
   return sheetsTabs.get(senderId)?.sessions.get(sessionId)?.path ?? null
@@ -4176,15 +3742,12 @@ export {
  * Attaches a proxy to the main process's global fetch (same source as
  * slides-main.applyMainProcessProxy): main-process Node fetch (undici) ignores
  * the system proxy by default, so direct connections from mainland networks to
- * overseas LLM endpoints like api.anthropic.com time out or get rejected by
+ * overseas API endpoints time out or get rejected by
  * egress region (403 Request not allowed). Environment variables take priority;
  * otherwise the system proxy is read via session.resolveProxy() after app ready.
  */
 async function applyMainProcessProxy(): Promise<void> {
   const setDispatcher = async (proxyUrl: string) => {
-    // spawned gsk CLI children do their own fetch and never see the
-    // dispatcher below — forward the proxy to them via env
-    setGskProxyUrl(proxyUrl)
     try {
       const { ProxyAgent, setGlobalDispatcher } = await import('undici')
       setGlobalDispatcher(new ProxyAgent(proxyUrl))
@@ -4207,9 +3770,8 @@ async function applyMainProcessProxy(): Promise<void> {
   }
   try {
     await app.whenReady()
-    // PAC/rule proxies answer per-host: probe the host the login flow, the
-    // Genspark LLM proxy and the gsk CLI actually target
-    const resolved = await electronSession.defaultSession.resolveProxy('https://www.genspark.ai/')
+    // PAC/rule proxies answer per-host: probe a plain external host
+    const resolved = await electronSession.defaultSession.resolveProxy('https://example.com/')
     const m = /PROXY\s+([^;]+)/i.exec(resolved || '')
     if (m?.[1]) {
       await setDispatcher(`http://${m[1].trim()}`)

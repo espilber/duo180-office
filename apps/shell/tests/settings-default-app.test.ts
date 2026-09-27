@@ -39,10 +39,6 @@ async function openGeneral(api: Partial<HomeApi>): Promise<void> {
   window.aiOffice = {
     getTheme: async () => 'system',
     getDefaultSaveDir: async () => '',
-    getAnalyticsEnabled: async () => true,
-    setAnalyticsEnabled: async () => true,
-    getAiPanelPrefs: async () => ({ fontSize: 'default', spellcheck: true }),
-    setAiPanelPrefs: async (patch) => ({ fontSize: 'default', spellcheck: true, ...patch }),
     getUpdateChannel: async () => 'stable',
     getAppVersion: async () => '1.0.0',
     githubStars: async () => null,
@@ -54,18 +50,7 @@ async function openGeneral(api: Partial<HomeApi>): Promise<void> {
       createElement(
         LocaleProvider,
         { initial: 'en' },
-        createElement(SettingsModal, {
-          status: null,
-          loggingOut: false,
-          loginWaiting: false,
-          loginUrl: null,
-          urlCopied: false,
-          onOpenLoginUrl: vi.fn(),
-          onCopyLoginUrl: vi.fn(),
-          onClose: vi.fn(),
-          onLogin: vi.fn(),
-          onLogout: vi.fn(),
-        }),
+        createElement(SettingsModal, { onClose: vi.fn() }),
       ),
     )
     await Promise.resolve()

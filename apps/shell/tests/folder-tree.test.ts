@@ -34,6 +34,19 @@ const errors = {
   failed: 'failed',
 }
 
+/** creating a symlink needs privileges on Windows (Developer Mode or admin) — probe once */
+const canSymlink = (() => {
+  const probe = mkdtempSync(join(tmpdir(), 'genoffice-symlink-probe-'))
+  try {
+    symlinkSync(probe, join(probe, 'link'))
+    return true
+  } catch {
+    return false
+  } finally {
+    rmSync(probe, { recursive: true, force: true })
+  }
+})()
+
 let root: string
 
 function touch(rel: string, content = 'x'): string {
@@ -109,7 +122,7 @@ describe('isInsideRoot', () => {
     expect(isInsideRoot(root, `${root}-sibling`)).toBe(false)
   })
 
-  it('rejects a symlink inside the root that points outside it', () => {
+  it.skipIf(!canSymlink)('rejects a symlink inside the root that points outside it', () => {
     const outside = mkdtempSync(join(tmpdir(), 'genoffice-outside-'))
     try {
       symlinkSync(outside, join(root, 'escape'))

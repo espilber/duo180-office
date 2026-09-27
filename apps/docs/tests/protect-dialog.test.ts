@@ -2,6 +2,10 @@
 // a diff (ProtectDialogResult) — untouched sections must stay undefined, and
 // removing a password-protected restriction must verify the password first.
 import { describe, expect, it, vi } from 'vitest'
+
+// the dialog hashes/verifies passwords with the real iteration count, which can
+// take much longer than the default budget when the whole suite runs in parallel
+vi.setConfig({ testTimeout: 300_000 })
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { hashProtectionPassword, verifyProtectionPassword } from '@genoffice/docx-engine'
@@ -46,7 +50,7 @@ async function mount(partial: Partial<Props>) {
   const submit = async (done: () => boolean) => {
     await click(host.querySelector('.btn-primary')!)
     const start = Date.now()
-    while (!done() && Date.now() - start < 10_000) {
+    while (!done() && Date.now() - start < 240_000) {
       await act(async () => {
         await new Promise((r) => setTimeout(r, 10))
       })

@@ -1,31 +1,33 @@
-name: Feature request
-description: Suggest a new capability or an improvement
+name: Petición de función
+description: Propón una capacidad nueva o una mejora
 labels: [enhancement]
 body:
   - type: dropdown
     id: app
     attributes:
-      label: App
+      label: Aplicación
       options:
-        - GenOffice Docs (docs)
-        - GenOffice Sheets (sheets)
-        - GenOffice Slides (slides)
-        - GenOffice PDF (pdf)
-        - GenOffice Markdown (markdown)
-        - Shell / home screen
-        - AI panel / providers
-        - Whole suite
+        - duo180 Docs (docs)
+        - duo180 Sheets (sheets)
+        - duo180 Slides (slides)
+        - duo180 PDF (pdf)
+        - duo180 Markdown (markdown)
+        - duo180 HTML (html)
+        - Contenedor / pantalla de inicio
+        - Toda la suite
     validations:
       required: true
   - type: textarea
     id: problem
     attributes:
-      label: Problem
-      description: What are you trying to do that is currently hard or impossible?
+      label: Problema
+      description: ¿Qué intentas hacer que hoy resulta difícil o imposible?
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed solution
-      description: How would you like it to work? Alternatives you considered are welcome too.
+      label: Solución propuesta
+      description: ¿Cómo te gustaría que funcionara? También son bienvenidas las alternativas que hayas considerado.
+    validations:
+      required: true

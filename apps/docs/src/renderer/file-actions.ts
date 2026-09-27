@@ -44,7 +44,7 @@ import {
   type WatermarkSpec,
 } from '@genoffice/docx-engine'
 import type { Dispatch, SetStateAction } from 'react'
-import type { AiDocContent, OpenDocxResult } from '../shared/ipc'
+import type { OpenDocxResult } from '../shared/ipc'
 import {
   hfVariantsFromParsed,
   openedFileStartsDirty,
@@ -80,8 +80,8 @@ import {
   type InkTool,
 } from './editor/ink'
 import { t, getLang } from './i18n/locale'
-import { isBlankDocument, parseHtmlFragment, replaceBlockRange } from './ai/protocol'
-import { carryDocSeen } from './ai/tools'
+import { isBlankDocument } from './ops/html-fragment'
+import { carryDocSeen } from './ops/doc-seen'
 import { isDocDirty, resetCrossDocEditState } from './doc-dirty'
 import { pruneUnreferencedNumbering } from './numbering-actions'
 import { applySectPrRewrites, type SectPrRewrite } from './sectpr-rewrite'
@@ -113,9 +113,7 @@ export interface FileActionContext {
   setShowPrintDialog: (show: boolean) => void
   setStatus: (status: string) => void
   setRecent: (paths: string[]) => void
-  setShowAi: (show: boolean) => void
   setDoc: Dispatch<SetStateAction<DocState | null>>
-  setAiPanelKey: Dispatch<SetStateAction<number>>
   setDocCss: (css: string) => void
   /** true while a phased open streams the document tail (editor stays read-only) */
   setDocLoading: (loading: boolean) => void
@@ -439,7 +437,6 @@ export async function loadFile(
     // Done here, not in the main process's loadDocx — Review > Compare also
     // opens files without replacing the current document.
     discardStalePasswordIntents()
-    ctx.setAiPanelKey((k) => k + 1)
     ctx.setDocCss(docStyleCss(parsed))
     ctx.setSection(readSectionSettings(parsed))
     ctx.setSections(readSections(parsed))
@@ -580,7 +577,6 @@ export async function newFile(ctx: FileActionContext): Promise<boolean | undefin
     // a fresh blank draft starts unencrypted: drop any pending password left by
     // the previous draft (its DocState, including the encrypted flag, is gone)
     discardStalePasswordIntents()
-    ctx.setAiPanelKey((k) => k + 1)
     ctx.setDocCss(docStyleCss(parsed))
     ctx.setSection(readSectionSettings(parsed))
     ctx.setSections(readSections(parsed))
@@ -625,7 +621,6 @@ export async function newFile(ctx: FileActionContext): Promise<boolean | undefin
     ctx.onWriteProtectionLoaded(null)
     ctx.setCompareResult(null)
     ctx.dirtyRef.current = false
-    ctx.setShowAi(true)
     ctx.setStatus(t('appNewDocCreated'))
     return true
   } catch (err) {
@@ -874,7 +869,6 @@ export function save(
   saveAs: boolean,
   auto = false,
   newDocName?: string,
-  explicitTarget?: ExplicitSaveTarget,
 ): Promise<boolean> {
   // A save arriving mid-flight waits for the current one instead of failing.
   // Reuse the finished pass only when it left nothing behind — judged by the
@@ -887,77 +881,10 @@ export function save(
     async () => {
       const settled = ctx.settleFontSettings ? await ctx.settleFontSettings() : ctx
       if (docGeneration !== generation) return false
-      return saveOnce(settled, saveAs, auto, newDocName, explicitTarget)
+      return saveOnce(settled, saveAs, auto, newDocName)
     },
-    // an explicit MCP target must always write, never reuse an earlier pass
-    () => !saveAs && !explicitTarget && !ctx.saveIncompleteRef.current && !isDocDirty(ctx),
+    () => !saveAs && !ctx.saveIncompleteRef.current && !isDocDirty(ctx),
   )
-}
-
-/** an MCP-driven explicit output target: write to this absolute path, no dialog */
-export interface ExplicitSaveTarget {
-  path: string
-  overwrite: boolean
-  /** receives the main process's reason when the write is refused */
-  onError?: (message: string) => void
-}
-
-/** the parsed fragment flags every node aiChanged (yellow highlight); a boot-time fill is not a reviewable AI edit */
-function stripAiChanged(node: PmNode): PmNode {
-  const next: PmNode = { ...node }
-  if (next.attrs && 'aiChanged' in next.attrs) next.attrs = { ...next.attrs, aiChanged: false }
-  if (next.content) next.content = next.content.map(stripAiChanged)
-  return next
-}
-
-/**
- * Parse queued create_document content into blocks. The docs chat validates
- * the fragment before queueing, but the pdf chat cannot (the parser lives
- * here), so unparseable HTML falls back to plain-text paragraphs instead of
- * silently dropping the content.
- */
-export function aiDocContentNodes(html: string): PmNode[] {
-  const numIds = { bullet: BLANK_BULLET_NUM_ID, ordered: BLANK_ORDERED_NUM_ID }
-  try {
-    const nodes = parseHtmlFragment(html, numIds)
-    if (nodes.length > 0) return nodes.map(stripAiChanged)
-  } catch {
-    /* fall through to the plain-text salvage */
-  }
-  try {
-    // textContent glues adjacent blocks in minified markup — reinsert the
-    // block structure as blank lines (and cell gaps as spaces) before parsing
-    const spaced = html
-      .replace(/<\/(?:td|th)>/gi, ' $&')
-      .replace(/<\/(?:p|h[1-6]|li|div|pre|blockquote|tr)>/gi, '$&\n\n')
-    const text = new DOMParser().parseFromString(spaced, 'text/html').body.textContent ?? ''
-    if (!text.trim()) return []
-    return parseHtmlFragment(text, numIds).map(stripAiChanged)
-  } catch {
-    return []
-  }
-}
-
-/**
- * Boot-time half of the AI create_document tool: fill the fresh blank
- * document with the queued content (same restricted-HTML pipeline as
- * insert_content), then silently save it under the tool-provided title.
- * The save runs even when nothing could be parsed — the tool already
- * reported the document as created, so an unsaved untitled tab would lie.
- */
-export async function applyAiDocContent(
-  ctx: FileActionContext,
-  content: AiDocContent,
-): Promise<void> {
-  const { editor, doc } = ctx
-  if (!editor || !doc) return
-  const nodes = aiDocContentNodes(content.html)
-  if (nodes.length > 0) {
-    replaceBlockRange(editor, 0, editor.state.doc.childCount - 1, nodes)
-    // the document is born with this content: undo must not reach back to empty
-    resetEditorHistory(editor)
-  }
-  await save(ctx, false, true, `${content.title}.docx`)
 }
 
 async function saveOnce(
@@ -965,7 +892,6 @@ async function saveOnce(
   saveAs: boolean,
   auto: boolean,
   newDocName?: string,
-  explicitTarget?: ExplicitSaveTarget,
 ): Promise<boolean> {
   const { doc, editor } = ctx
   if (!doc || !editor) return false
@@ -994,25 +920,7 @@ async function saveOnce(
     let savedPath = doc.filePath ?? pathlessDocSavedPath
     let passwordIntentPending = false
     let fullBytes: Uint8Array | undefined
-    if (explicitTarget) {
-      // MCP-driven explicit output: no dialog, no derived name — always write to
-      // the caller's path (overwrite policy is enforced in the main process).
-      const result = await window.desktop.saveDocxTo(
-        explicitTarget.path,
-        buffer,
-        explicitTarget.overwrite,
-      )
-      if (!result.ok) {
-        ctx.setStatus(t('appSaveFailed', { error: result.error ?? '' }))
-        showToast(t('appSaveFailed', { error: result.error ?? '' }), 'error')
-        explicitTarget.onError?.(result.error ?? '')
-        return false
-      }
-      savedPath = result.path!
-      passwordIntentPending = result.passwordIntentPending === true
-      if (result.dataUrl) fullBytes = await fetchDocBytes(result.dataUrl)
-      if (!doc.filePath) pathlessDocSavedPath = savedPath
-    } else if (saveAs || !savedPath) {
+    if (saveAs || !savedPath) {
       // A never-saved document still called "Untitled" gets a name derived from its first heading
       const autoName =
         !doc.filePath && doc.fileName === t('appUntitledDocx') ? deriveAutoFileName(editor) : null

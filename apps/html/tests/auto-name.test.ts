@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  deriveAutoFileName,
-  deriveNameFromPrompt,
-  derivePageTitleName,
-} from '../src/renderer/document/auto-name'
+import { deriveAutoFileName, derivePageTitleName } from '../src/renderer/document/auto-name'
 
 describe('deriveAutoFileName', () => {
   it('prefers the document title', () => {
@@ -69,45 +65,5 @@ describe('derivePageTitleName', () => {
     ).toBe('Studio')
     expect(derivePageTitleName('<title>Studio</title><p>hi</p>')).toBe('Studio')
     expect(derivePageTitleName('<svg><title>Logo</title></svg>')).toBe('')
-  })
-})
-
-describe('deriveNameFromPrompt', () => {
-  it('keeps the first clause of the first sentence and drops the politeness prefix', () => {
-    expect(
-      deriveNameFromPrompt(
-        '\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e2a\u4eba\u5de5\u4f5c\u53f0\u7684\u754c\u9762\u7a3f\uff0c\u5e38\u7528\u5165\u53e3\u3001\u5f85\u529e\u3001\u65e5\u7a0b\u3001\u6307\u6807\u7b49\u6a21\u5757\u53ef\u81ea\u5b9a\u4e49\u5e03\u5c40\u3002\u4f7f\u7528\u8005\u548c\u573a\u666f\u662f\uff1a\u8bbe\u8ba1/\u521b\u610f',
-      ),
-    ).toBe('\u8bbe\u8ba1\u4e00\u4e2a\u4e2a\u4eba\u5de5\u4f5c\u53f0\u7684\u754c\u9762\u7a3f')
-    expect(deriveNameFromPrompt('Please build a landing page for my bakery, warm tones.')).toBe(
-      'Build a landing page for my bakery',
-    )
-  })
-
-  it('does not break inside the first few characters', () => {
-    expect(deriveNameFromPrompt('\u5f85\u529e\uff0c\u65e5\u7a0b\uff0c\u7b14\u8bb0')).toBe(
-      '\u5f85\u529e\uff0c\u65e5\u7a0b\uff0c\u7b14\u8bb0',
-    )
-    expect(
-      deriveNameFromPrompt(
-        '\u5f85\u529e\uff0c\u65e5\u7a0b\u548c\u7b14\u8bb0\uff0c\u8fd8\u6709\u5929\u6c14',
-      ),
-    ).toBe('\u5f85\u529e\uff0c\u65e5\u7a0b\u548c\u7b14\u8bb0')
-  })
-
-  it('uses only the first line and caps long clauses at a word boundary', () => {
-    expect(deriveNameFromPrompt('Dashboard\nwith many details')).toBe('Dashboard')
-    const long = 'A single very long request without any punctuation that keeps going on'
-    const name = deriveNameFromPrompt(long)
-    expect(name.length).toBeLessThanOrEqual(40)
-    expect(long.startsWith(name)).toBe(true)
-    expect(name.endsWith(' ')).toBe(false)
-  })
-
-  it('keeps dotted tokens and returns empty for blank input', () => {
-    expect(deriveNameFromPrompt('Rebuild index.html for v2.0 today')).toBe(
-      'Rebuild index.html for v2.0 today',
-    )
-    expect(deriveNameFromPrompt('  \n ')).toBe('')
   })
 })

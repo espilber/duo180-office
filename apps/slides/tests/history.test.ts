@@ -12,8 +12,6 @@ import {
   carryHistoryForReplacement,
   endHistoryBatch,
   pushHistory,
-  registerAiSnapshot,
-  restoreAiSnapshot,
   restoreSnapshot,
   settleStaleHistoryBatch,
   takeSnapshot,
@@ -121,35 +119,6 @@ describe('Slides main-process history batching', () => {
     const emptyRun = sessionWith('untouched')
     beginHistoryBatch(emptyRun)
     expect(endHistoryBatch(emptyRun)).toBeNull()
-  })
-
-  it('rolls back to a registered AI snapshot and makes the rollback undoable', () => {
-    const session = sessionWith('before')
-    beginHistoryBatch(session)
-    pushHistory(session)
-    setValue(session, 'ai edited')
-    const id = registerAiSnapshot(session, endHistoryBatch(session)!)
-
-    setValue(session, 'user edited on top')
-    expect(restoreAiSnapshot(session, id)).toBe(true)
-    expect(valueOf(session)).toBe('before')
-    expect(restoreAiSnapshot(session, id)).toBe(false) // consumed
-
-    restoreSnapshot(session, session.undoStack.pop()!) // ⌘Z returns to the pre-rollback state
-    expect(valueOf(session)).toBe('user edited on top')
-  })
-
-  it('keeps registered snapshots isolated from later in-place deck mutations', () => {
-    const session = sessionWith('before')
-    beginHistoryBatch(session)
-    pushHistory(session)
-    setValue(session, 'ai edited')
-    const id = registerAiSnapshot(session, endHistoryBatch(session)!)
-
-    restoreSnapshot(session, session.undoStack.pop()!) // undo hands the stack snapshot to the live deck
-    setValue(session, 'mutated after undo')
-    expect(restoreAiSnapshot(session, id)).toBe(true)
-    expect(valueOf(session)).toBe('before')
   })
 
   it('undo restores the archive-only dirty flag with the deck', () => {

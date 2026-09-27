@@ -1,6 +1,6 @@
 {
   "name": "@genoffice/sheets",
-  "productName": "GenOffice Sheets",
+  "productName": "duo180 Office Sheets",
   "version": "0.1.0",
   "private": true,
   "description": "Cross-platform AI-native spreadsheet compatibility prototype",
@@ -24,9 +24,6 @@
   },
   "dependencies": {
     "@fluentui/react-icons": "^2.0.333",
-    "@genoffice/agent-core": "*",
-    "@genoffice/ai-provider": "*",
-    "@genoffice/ai-search": "*",
     "@genoffice/docx-engine": "*",
     "@genoffice/electron-utils": "*",
     "@genoffice/file-parse": "*",
@@ -70,5 +67,5 @@
     "vite": "^7.3.1",
     "vitest": "^4.1.11"
   },
-  "author": "GenOffice"
+  "author": "duo180 Office"
 }

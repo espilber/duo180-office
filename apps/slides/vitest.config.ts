@@ -38,11 +38,6 @@ export default defineConfig({
         '../../packages/pptx-render/src/preset-geometry.ts',
       ),
       '@genoffice/pptx-render': resolve(here, '../../packages/pptx-render/src/index.ts'),
-      '@genoffice/pipelines/slides/layout-audit': resolve(
-        here,
-        '../../packages/pipelines/src/slides/layout-audit.ts',
-      ),
-      '@genoffice/pipelines/slides': resolve(here, '../../packages/pipelines/src/slides/index.ts'),
       '@genoffice/docx-engine/metafile': resolve(
         here,
         '../../packages/docx-engine/src/metafile.ts',

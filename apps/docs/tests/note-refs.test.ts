@@ -9,7 +9,7 @@ import {
   editNoteText,
   noteInsertPos,
   protectedNoteMarkBlock,
-} from '../src/renderer/ai/note-ops'
+} from '../src/renderer/ops/note-ops'
 
 function createEditor(content: PmNode[]): Editor {
   return new Editor({

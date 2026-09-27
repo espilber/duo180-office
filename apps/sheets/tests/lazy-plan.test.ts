@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { planPrompt } from '../src/ai/deterministic-planner'
 import { workbookCommandBatchSchema } from '@genoffice/xlsx-gateway/domain/workbook-dsl'
 import type { CellState } from '@genoffice/xlsx-gateway/domain/workbook.types'
 import { buildLazyChangePlan, planStillMatches } from '../src/renderer/lazy-plan'
@@ -11,16 +10,20 @@ const CELLS: Record<string, CellState> = {
 }
 const readCell = (address: string): CellState => CELLS[address] ?? { value: null }
 
-function plan(prompt: string) {
-  const batch = workbookCommandBatchSchema.parse(
-    planPrompt(prompt, { revision: 0, sheetId: 'sheet-1' }),
-  )
+function plan(operations: unknown[]) {
+  const batch = workbookCommandBatchSchema.parse({
+    dslVersion: 1,
+    transactionId: 'tx-1',
+    baseRevision: 0,
+    summary: 'ops',
+    operations,
+  })
   return buildLazyChangePlan(batch, readCell, () => 'Data')
 }
 
 describe('buildLazyChangePlan', () => {
   it('previews a value set with the live cell as before-state', () => {
-    const result = plan('set B2 to 4242')
+    const result = plan([{ op: 'set_cell', sheetId: 'sheet-1', address: 'B2', value: 4242 }])
     expect(result.cellChanges).toEqual([
       {
         sheetId: 'sheet-1',
@@ -33,7 +36,9 @@ describe('buildLazyChangePlan', () => {
   })
 
   it('previews a formula set over a formula cell', () => {
-    const result = plan('formula C3 = MAX(A1:A9)')
+    const result = plan([
+      { op: 'set_formula', sheetId: 'sheet-1', address: 'C3', formula: '=MAX(A1:A9)' },
+    ])
     expect(result.cellChanges).toEqual([
       {
         sheetId: 'sheet-1',
@@ -45,7 +50,7 @@ describe('buildLazyChangePlan', () => {
   })
 
   it('previews a sheet rename with the current name as before-state', () => {
-    const result = plan('rename sheet to Budget 2027')
+    const result = plan([{ op: 'rename_sheet', sheetId: 'sheet-1', name: 'Budget 2027' }])
     expect(result.sheetRenames).toEqual([
       {
         sheetId: 'sheet-1',
@@ -57,7 +62,7 @@ describe('buildLazyChangePlan', () => {
   })
 
   it('rejects an invalid sheet name through the DSL schema', () => {
-    expect(() => plan('rename sheet to bad[name]')).toThrow()
+    expect(() => plan([{ op: 'rename_sheet', sheetId: 'sheet-1', name: 'bad[name]' }])).toThrow()
   })
 })
 
@@ -276,13 +281,15 @@ describe('buildLazyChangePlan: cross-sheet routing', () => {
 
 describe('planStillMatches', () => {
   it('accepts when previewed cells are unchanged and rejects drift', () => {
-    const result = plan('set B2 to 4242')
+    const result = plan([{ op: 'set_cell', sheetId: 'sheet-1', address: 'B2', value: 4242 }])
     expect(planStillMatches(result, readCell)).toBe(true)
     expect(planStillMatches(result, () => ({ value: 'changed meanwhile' }))).toBe(false)
   })
 
   it('treats formula changes as drift', () => {
-    const result = plan('formula C3 = MAX(A1:A9)')
+    const result = plan([
+      { op: 'set_formula', sheetId: 'sheet-1', address: 'C3', formula: '=MAX(A1:A9)' },
+    ])
     expect(planStillMatches(result, readCell)).toBe(true)
     expect(planStillMatches(result, () => ({ value: null, formula: '=SUM(A1:A3)' }))).toBe(false)
   })

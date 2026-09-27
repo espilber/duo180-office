@@ -3,7 +3,7 @@ import { Editor } from '@tiptap/core'
 import { parseDocx, saveDocx } from '@genoffice/docx-engine'
 import { buildDocx } from '../../../packages/docx-engine/tests/helpers/build-docx'
 import { blocksToPmDoc, pmDocToSavePlan, type PmNode } from '../src/renderer/editor/convert'
-import { executeTool } from '../src/renderer/ai/tools'
+import { executeOps } from '../src/renderer/ops/ops'
 
 /**
  * Indent edits on paragraphs laid out with character-unit indents
@@ -47,18 +47,10 @@ async function openEditor() {
 }
 
 async function setFirstLine(editor: Editor, indentFirstLine: number | null) {
-  const exec = await executeTool(
-    editor,
-    {
-      id: 't',
-      name: 'apply_ops',
-      input: {
-        ops: [{ op: 'setParagraphFormat', target: { blockIndexes: [0, 1] }, indentFirstLine }],
-      },
-    },
-    NUM_IDS,
-  )
-  expect(exec.isError).toBeFalsy()
+  const exec = executeOps(editor, [
+    { op: 'setParagraphFormat', target: { blockIndexes: [0, 1] }, indentFirstLine },
+  ])
+  expect(exec.ok).toBe(true)
 }
 
 describe('character-unit indents: saving an indent edit', () => {
@@ -106,18 +98,10 @@ describe('character-unit indents: saving an indent edit', () => {
 
   it('an unrelated edit keeps the paragraphs character-indented', async () => {
     const { editor, parsed } = await openEditor()
-    const exec = await executeTool(
-      editor,
-      {
-        id: 't',
-        name: 'apply_ops',
-        input: {
-          ops: [{ op: 'setParagraphFormat', target: { blockIndexes: [1] }, align: 'center' }],
-        },
-      },
-      NUM_IDS,
-    )
-    expect(exec.isError).toBeFalsy()
+    const exec = executeOps(editor, [
+      { op: 'setParagraphFormat', target: { blockIndexes: [1] }, align: 'center' },
+    ])
+    expect(exec.ok).toBe(true)
     const plan = pmDocToSavePlan(editor.getJSON() as PmNode, parsed.blocks)
     const saved = await saveDocx(parsed, plan.saveBlocks)
     const reparsed = await parseDocx(saved)

@@ -15,7 +15,7 @@ import {
   signatureOfGenerated,
 } from '../src/renderer/editor/convert'
 import { clearParagraphFormatting, setParaAttrs } from '../src/renderer/components/ribbon-tabs'
-import { runUiOps } from '../src/renderer/ai/ops'
+import { runUiOps } from '../src/renderer/ops/ops'
 import {
   directParaFlags,
   effectiveParaFlags,

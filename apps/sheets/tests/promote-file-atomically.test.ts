@@ -95,7 +95,10 @@ describe('promoteFileAtomically', () => {
     expect(await readFile(target, 'utf8')).toBe('old-bytes')
   }, 15_000)
 
-  it('restores the target when the in-place copy dies after truncating it', async () => {
+  // Windows cannot make a directory write-protected the POSIX way (chmod 0555
+  // only sets the read-only attribute, which does not block rename/copy), so the
+  // fallback path these two cover cannot be forced there.
+  it.skipIf(process.platform === 'win32')('restores the target when the in-place copy dies after truncating it', async () => {
     const dir = await scratchDir()
     const locked = join(dir, 'locked')
     await mkdir(locked)
@@ -119,7 +122,10 @@ describe('promoteFileAtomically', () => {
     expect(await readFile(temporary, 'utf8')).toBe('new-bytes')
   }, 15_000)
 
-  it('names the surviving backup when the target cannot be restored either', async () => {
+  // Windows cannot make a directory write-protected the POSIX way (chmod 0555
+  // only sets the read-only attribute, which does not block rename/copy), so the
+  // fallback path these two cover cannot be forced there.
+  it.skipIf(process.platform === 'win32')('names the surviving backup when the target cannot be restored either', async () => {
     const dir = await scratchDir()
     const locked = join(dir, 'locked')
     await mkdir(locked)

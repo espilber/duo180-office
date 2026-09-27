@@ -4,14 +4,12 @@ import { NodeSelection, TextSelection, type Transaction } from '@tiptap/pm/state
 import type { Mapping } from '@tiptap/pm/transform'
 import { createTable } from '@tiptap/extension-table'
 import { stripLegacyFencedDivs } from '../markdown/docText'
-import type { StringKey } from '../i18n/locale'
 
 /**
- * The single edit entry shared by the AI (`apply_ops`) and the discrete UI
- * actions (ribbon, slash menu, table menu, block handle). Typing and paste
- * stay on the raw ProseMirror step layer; everything with a name goes
- * through here so both callers get the same validation, addressing and
- * result reporting.
+ * The single edit entry shared by the discrete UI actions (ribbon, slash
+ * menu, table menu, block handle). Typing and paste stay on the raw
+ * ProseMirror step layer; everything with a name goes through here so every
+ * caller gets the same validation, addressing and result reporting.
  */
 
 export type BlockTarget = 'selection' | { start: number; end?: number }
@@ -70,7 +68,8 @@ export interface FrontmatterAccess {
 }
 
 export interface OpsContext {
-  source: 'ai' | 'ui'
+  /** 'ui' = interactive edit (scroll/focus/caret follow the change); 'programmatic' = batch edit that must not steal focus */
+  source: 'programmatic' | 'ui'
   frontmatter?: FrontmatterAccess
 }
 
@@ -81,7 +80,7 @@ interface Range {
 
 export type OpResult = { ok: true; message: string } | { ok: false; error: string }
 
-/** transaction meta every runOps dispatch carries; plugins (AI highlight, logs) key off it */
+/** transaction meta every runOps dispatch carries; plugins (logs) key off it */
 export const OP_META = 'mdOp'
 export interface OpMeta {
   op: OpName
@@ -117,7 +116,6 @@ interface FieldSpec {
 }
 
 interface OpSpec {
-  labelKey: StringKey
   doc: string
   fields: Record<string, FieldSpec>
 }
@@ -127,12 +125,10 @@ const AFTER: FieldSpec = { type: 'anchor', required: true, doc: 'where to insert
 
 export const OP_SPECS: Record<OpName, OpSpec> = {
   insertContent: {
-    labelKey: 'aiToolInsert',
     doc: 'insert markdown blocks. On a blank document this replaces the empty paragraph.',
     fields: { after: AFTER, markdown: { type: 'string', required: true, doc: 'GFM content' } },
   },
   replaceBlocks: {
-    labelKey: 'aiToolReplace',
     doc: 'replace the target blocks with new markdown (full rewrites, structural changes).',
     fields: {
       target: TARGET,
@@ -140,12 +136,10 @@ export const OP_SPECS: Record<OpName, OpSpec> = {
     },
   },
   deleteBlocks: {
-    labelKey: 'blockDelete',
     doc: 'delete the target blocks (the document always keeps at least one paragraph).',
     fields: { target: TARGET },
   },
   replaceText: {
-    labelKey: 'aiToolReplaceText',
     doc: 'replace every exact plain-text occurrence inside the target blocks, keeping structure and formatting. Prefer this for small in-place fixes. Matches never cross paragraph or table-cell boundaries.',
     fields: {
       target: TARGET,
@@ -154,7 +148,6 @@ export const OP_SPECS: Record<OpName, OpSpec> = {
     },
   },
   setStyle: {
-    labelKey: 'aiToolStyleText',
     doc: 'apply/remove an inline style. With `find`: on every occurrence of that text inside the target; without: on the whole target text.',
     fields: {
       target: TARGET,
@@ -164,7 +157,6 @@ export const OP_SPECS: Record<OpName, OpSpec> = {
     },
   },
   setLink: {
-    labelKey: 'aiOpSetLink',
     doc: 'link text. With `find`: every occurrence inside the target; without: the whole target text. href null removes the link.',
     fields: {
       target: TARGET,
@@ -173,7 +165,6 @@ export const OP_SPECS: Record<OpName, OpSpec> = {
     },
   },
   setBlockType: {
-    labelKey: 'aiOpSetBlockType',
     doc: 'convert the target blocks to paragraph / heading / blockquote / codeBlock (list items are lifted out of their list first).',
     fields: {
       target: TARGET,
@@ -183,7 +174,6 @@ export const OP_SPECS: Record<OpName, OpSpec> = {
     },
   },
   toggleList: {
-    labelKey: 'aiOpToggleList',
     doc: 'turn the target blocks into a bullet / ordered / task list, or back into paragraphs when they already are that list.',
     fields: {
       target: TARGET,
@@ -191,7 +181,6 @@ export const OP_SPECS: Record<OpName, OpSpec> = {
     },
   },
   moveBlocks: {
-    labelKey: 'aiOpMoveBlocks',
     doc: 'move the target blocks to sit after block `after` (-1 = document start).',
     fields: {
       target: TARGET,
@@ -199,12 +188,10 @@ export const OP_SPECS: Record<OpName, OpSpec> = {
     },
   },
   duplicateBlocks: {
-    labelKey: 'blockDuplicate',
     doc: 'insert a copy of the target blocks right after them.',
     fields: { target: TARGET },
   },
   insertTable: {
-    labelKey: 'insertTable',
     doc: 'insert an empty table (fill cells afterwards with replaceText, or insert a whole pipe table with insertContent instead).',
     fields: {
       after: AFTER,
@@ -214,12 +201,10 @@ export const OP_SPECS: Record<OpName, OpSpec> = {
     },
   },
   insertHorizontalRule: {
-    labelKey: 'insertHr',
     doc: 'insert a horizontal rule.',
     fields: { after: AFTER },
   },
   insertImage: {
-    labelKey: 'aiToolInsertImage',
     doc: 'insert an image block from a path already stored beside the document (insert_image / generate_image do the download and call this for you).',
     fields: {
       after: AFTER,
@@ -228,7 +213,6 @@ export const OP_SPECS: Record<OpName, OpSpec> = {
     },
   },
   editTable: {
-    labelKey: 'aiOpEditTable',
     doc: 'structural table edit at a cell of the target table block. row/col default 0.',
     fields: {
       target: TARGET,
@@ -238,42 +222,9 @@ export const OP_SPECS: Record<OpName, OpSpec> = {
     },
   },
   setFrontmatter: {
-    labelKey: 'aiToolSetFm',
     doc: 'replace the whole YAML properties block (inner YAML only, no --- fences; empty removes it). Read it first and keep the keys you are not changing.',
     fields: { yaml: { type: 'string', required: true, doc: 'inner YAML' } },
   },
-}
-
-function fieldTypeName(type: FieldType): string {
-  if (typeof type === 'object') return type.enum.map((v) => `"${v}"`).join('|')
-  switch (type) {
-    case 'target':
-      return 'target'
-    case 'anchor':
-      return 'int|"selection"'
-    case 'blockIndex':
-      return 'int'
-    case 'nullableString':
-      return 'string|null'
-    default:
-      return type
-  }
-}
-
-/** model-facing catalogue; one line per op, generated from OP_SPECS so it cannot drift */
-export function buildOpsGuide(): string {
-  const lines = [
-    'Each op is a JSON object with an `op` name plus fields. Addressing: `target` is "selection" (the blocks covered by the user selection) or {start, end?} (0-based inclusive top-level block indexes, end defaults to start); `after` is a block index to insert after (-1 = document start) or "selection" (after the block at the caret). All indexes in one call refer to the document as it was before the call, so ops may be listed in any order.',
-    '',
-    ...(Object.keys(OP_SPECS) as OpName[]).map((name) => {
-      const spec = OP_SPECS[name]
-      const fields = Object.entries(spec.fields)
-        .map(([f, s]) => `${f}${s.required ? '' : '?'}: ${fieldTypeName(s.type)}`)
-        .join(', ')
-      return `- ${name} {${fields}} — ${spec.doc}`
-    }),
-  ]
-  return lines.join('\n')
 }
 
 function isInt(v: unknown): v is number {

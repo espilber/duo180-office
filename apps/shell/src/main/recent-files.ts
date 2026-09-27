@@ -63,7 +63,6 @@ export const EXT_FAMILY: Record<string, readonly string[]> = {
   // the shell's open routing both treat .csv/.tsv as spreadsheets, so a
   // sidebar filtered on "xlsx" must page them in too (csv was missing here).
   xlsx: ['xlsx', 'xlsm', 'xls', 'csv', 'tsv'],
-  html: ['html', 'htm'],
 }
 
 /** Family-aware extension match for sidebar filters (recents and starred share it). */

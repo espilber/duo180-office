@@ -164,7 +164,12 @@ describe('copy materialize screen extent', () => {
       endColumn: 119,
     })
     expect(written).toEqual(['Año\t1,234.50\n\tTRUE'])
-    expect(h.messages.at(-1)).toMatch(/A1:DP12000.*1,440,000.*250,000/)
+    // The message formats its counts with the runtime locale (copy-materialize.ts),
+    // so assert the same way instead of hard-coding one locale's digit grouping.
+    const message = h.messages.at(-1) ?? ''
+    expect(message).toContain('A1:DP12000')
+    expect(message).toContain((1_440_000).toLocaleString())
+    expect(message).toContain((250_000).toLocaleString())
     dispose()
   })
 

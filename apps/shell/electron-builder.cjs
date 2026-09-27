@@ -13,13 +13,6 @@
  * the publish config is omitted: electron-builder then bakes no
  * app-update.yml into the app and in-app auto-update stays disabled.
  *
- * GENOFFICE_GA4_MEASUREMENT_ID / GENOFFICE_GA4_API_SECRET — GA4 Measurement
- * Protocol credentials for anonymous usage analytics, injected the same way
- * (CI secrets, or apps/shell/electron-builder.env locally). They are written
- * into the packaged app's package.json via extraMetadata and read back by
- * src/main/analytics.ts. When either is unset — every source/fork build —
- * nothing is injected and the app runs with analytics fully disabled.
- *
  * GENOFFICE_FONT_CDN_URL — base URL for the curated downloadable-font catalog.
  * Official release jobs inject it through extraMetadata so the endpoint stays
  * out of source. Without it, font download prompts/catalog entries are hidden;
@@ -44,8 +37,6 @@ function normalizeHttpsBaseUrl(name, value) {
 }
 
 const updateUrl = process.env.GENOFFICE_UPDATE_URL
-const ga4MeasurementId = process.env.GENOFFICE_GA4_MEASUREMENT_ID
-const ga4ApiSecret = process.env.GENOFFICE_GA4_API_SECRET
 const fontCdnUrl = normalizeHttpsBaseUrl(
   'GENOFFICE_FONT_CDN_URL',
   process.env.GENOFFICE_FONT_CDN_URL,
@@ -79,8 +70,6 @@ const WIN_SIDECAR = `../sheets/native/xlsx-engine/target/${winSidecarTarget}/rel
 
 function assertExtraResourceSources() {
   for (const rel of [
-    '../../node_modules/@genspark/cli',
-    '../../node_modules/@genspark/cli/node_modules/commander',
     '../../node_modules/ws',
     '../../node_modules/electron/dist/LICENSES.chromium.html',
     '../../node_modules/@embedpdf/pdfium/dist/pdfium.wasm',
@@ -211,62 +200,12 @@ function assertModuleTreesPresent() {
     '../pdf/out',
     '../markdown/out',
     '../html/out',
-    '../../packages/cli/dist/genoffice.cjs',
-    '../../packages/cli/dist/node_modules/jsdom',
   ]) {
     if (!existsSync(join(__dirname, rel))) {
       throw new Error(
         `electron-builder extraResources source missing: ${rel} (run npm run build:all first)`,
       )
     }
-  }
-}
-
-const CLI_BUNDLE_REL = '../../packages/cli/dist/genoffice.cjs'
-const CLI_BUILD_REL = '../../packages/cli/build.mjs'
-const CLI_VERSION_ENV = 'GENOFFICE_APP_VERSION'
-const CLI_VERSION_BANNER = /^const __cliAppVersion = ("(?:[^"\\]|\\.)*");$/m
-
-/**
- * The version the packaged app reports: CI's -c.extraMetadata.version deep-merges
- * into the block below, and without it electron-builder ships apps/shell/package.json.
- */
-function packagedAppVersion() {
-  const injected = config.extraMetadata && config.extraMetadata.version
-  if (typeof injected === 'string' && injected.trim()) return injected.trim()
-  return require('./package.json').version
-}
-
-function bundledCliVersion(bundlePath) {
-  const baked = CLI_VERSION_BANNER.exec(readFileSync(bundlePath, 'utf-8'))
-  if (!baked) return null
-  try {
-    return JSON.parse(baked[1])
-  } catch {
-    return null
-  }
-}
-
-/**
- * `genoffice --version` is baked into the CLI bundle, which is built before
- * electron-builder runs and therefore before a release version is known. Rebuild
- * it here with the app version whenever the two disagree, so the packaged
- * command line can never answer with the workspace CLI version.
- */
-function ensureCliBundleCarriesAppVersion() {
-  const bundlePath = join(__dirname, CLI_BUNDLE_REL)
-  const appVersion = packagedAppVersion()
-  if (bundledCliVersion(bundlePath) === appVersion) return
-  execFileSync(process.execPath, [join(__dirname, CLI_BUILD_REL)], {
-    stdio: 'inherit',
-    env: { ...process.env, [CLI_VERSION_ENV]: appVersion },
-  })
-  const baked = bundledCliVersion(bundlePath)
-  if (baked !== appVersion) {
-    throw new Error(
-      `packaged genoffice CLI reports ${baked ?? 'no version'} but the app ships ${appVersion} ` +
-        `(rebuild it with ${CLI_VERSION_ENV}=${appVersion})`,
-    )
   }
 }
 
@@ -296,8 +235,8 @@ function ensureThirdPartyNotices() {
 
 /** @type {import('electron-builder').Configuration} */
 const config = {
-  appId: 'com.genoffice.app',
-  productName: 'GenOffice',
+  appId: 'io.github.espilber.duo180',
+  productName: 'duo180 Office',
   // Resolved from the installed electron package so dependency bumps can
   // never leave a stale hard-coded pin behind (packaging would silently ship
   // the old runtime).
@@ -359,46 +298,6 @@ const config = {
     {
       from: '../../packages/pdf2docx/ocr-helper/win-ocr.exe',
       to: 'ocr/win-ocr.exe',
-    },
-    {
-      from: '../../node_modules/@genspark/cli',
-      to: 'gsk/node_modules/@genspark/cli',
-    },
-    // genoffice command line: runs on the app binary with ELECTRON_RUN_AS_NODE (as
-    // the gsk CLI above already does), so the RunAsNode fuse must stay enabled.
-    // Layout (Resources/cli next to wasm/, native/, ocr/) is what
-    // packages/cli/src/resources.ts expects.
-    {
-      from: '../../packages/cli/dist/genoffice.cjs',
-      to: 'cli/genoffice.cjs',
-    },
-    {
-      from: '../../packages/cli/bin/genoffice',
-      to: 'cli/genoffice',
-    },
-    {
-      from: '../../packages/cli/bin/genoffice.cmd',
-      to: 'cli/genoffice.cmd',
-    },
-    // the CLI's version (Settings → Integrations shows it) and the agent skill
-    // the same pane installs into Claude Code / Codex / …; bytes identical to the repo file
-    {
-      from: '../../packages/cli/package.json',
-      to: 'cli/package.json',
-    },
-    {
-      from: '../../skills/genoffice/SKILL.md',
-      to: 'cli/skills/genoffice/SKILL.md',
-    },
-    // runtime deps the genoffice bundle leaves external (jsdom for the Word/Markdown
-    // paths); collected by packages/cli/collect-deps.mjs during its build
-    {
-      from: '../../packages/cli/dist/node_modules',
-      to: 'cli/node_modules',
-    },
-    {
-      from: '../../node_modules/@genspark/cli/node_modules/commander',
-      to: 'gsk/node_modules/commander',
     },
     {
       from: '../../node_modules/ws',
@@ -560,41 +459,39 @@ const config = {
   linux: {
     // AppImage (self-contained, any distro) + deb (apt install, pulls in the
     // GTK/NSS runtime deps) + rpm (dnf/zypper install on Fedora / RHEL /
-    // openSUSE). Default artifact names are kept on purpose —
-    // GenOffice-<v>.AppImage / genoffice_<v>_amd64.deb — because the public
-    // README download links and the already-published linux-v0.5.149 release
-    // use them.
+    // Fork build: the artifacts carry the fork name, with no upstream release
+    // lineage to preserve (genoffice's published linux-v0.5.149 names are not
+    // reused). AppImage takes linux.artifactName below so the space in
+    // productName never lands in a file name.
     target: [
       { target: 'AppImage', arch: ['x64'] },
       { target: 'deb', arch: ['x64'] },
       { target: 'rpm', arch: ['x64'] },
     ],
-    // deb control metadata; values match the manually published 0.5.149 deb
-    // so apt sees the new packages as the same lineage. Homepage comes from
-    // package.json "homepage"; the Package field is pinned in the deb block
-    // below (packageName is a per-target option, rejected here by the schema).
-    maintainer: 'Mainfunc, Inc. <team@genspark.ai>',
-    vendor: 'Mainfunc, Inc. <team@genspark.ai>',
+    artifactName: 'duo180-office-${version}.${ext}',
+    // deb control metadata for the fork build.
+    maintainer: 'duo180 Office <espilber@users.noreply.github.com>',
+    vendor: 'duo180 Office <espilber@users.noreply.github.com>',
     category: 'Office',
     // Icon SET directory, not the single 1024px png: electron-builder does
     // not resize a lone png, so deb/rpm would install only
-    // hicolor/1024x1024/apps/genoffice.png — a size absent from the hicolor
+    // hicolor/1024x1024/apps/duo180-office.png — a size absent from the hicolor
     // theme index, leaving GNOME/KDE launchers on the generic fallback icon
-    // (genspark-ai/genoffice#90). The set ships every standard raster size.
+    // (electron-builder does not resize a lone png). The set ships every size.
     icon: 'build/icons',
     // mac and win name the binary from productName; linux instead derives it
     // from package.json "name", and "@genoffice/shell" sanitizes to the
     // invalid "@genofficeshell". Setting it explicitly also makes the
-    // generated genoffice.desktop match the WM_CLASS Electron reports (it
+    // generated duo180-office.desktop match the WM_CLASS Electron reports (it
     // takes that from the executable basename), so the running window links
     // back to its launcher entry.
-    executableName: 'genoffice',
+    executableName: 'duo180-office',
     // Electron takes its X11 app_id from package.json "desktopName"
-    // (genoffice.desktop); syncDesktopName makes electron-builder name the
+    // (duo180-office.desktop); syncDesktopName makes electron-builder name the
     // .desktop file and its StartupWMClass from the same value. Without it
-    // StartupWMClass falls back to productName ("GenOffice"), which does not
-    // match the "genoffice" WM_CLASS the window actually reports — and X11
-    // compares case-sensitively, so the taskbar shows an unlinked window.
+    // StartupWMClass falls back to productName ("duo180 Office"), which does
+    // not match the "duo180-office" WM_CLASS the window actually reports — and
+    // X11 compares case-sensitively, so the taskbar shows an unlinked window.
     syncDesktopName: true,
     extraResources: [
       {
@@ -603,20 +500,12 @@ const config = {
       },
     ],
   },
-  // Same "@genoffice/shell" problem as executableName above: the default deb
-  // artifact name derives from package.json "name", and the scope's "/" makes
-  // fpm treat "@genoffice" as a directory. Spell the published name out
-  // (genoffice_<version>_amd64.deb, matching the linux-v0.5.149 release).
-  // packageName pins the control Package field to the same value the 0.5.149
-  // deb shipped with — apt treats a different Package name as an unrelated
-  // install, breaking upgrades. Without it, fpm receives productName
-  // "GenOffice" and only happens to downcase it to the right value.
+  // Same "@genoffice/shell" naming problem as executableName above: the default
+  // deb artifact name derives from package.json "name", and the scope's "/"
+  // makes fpm treat "@genoffice" as a directory. Spell the fork name out.
   deb: {
-    artifactName: 'genoffice_${version}_${arch}.deb',
-    packageName: 'genoffice',
-    // expose the genoffice command line shipped inside the app
-    afterInstall: 'build/linux-after-install.sh',
-    afterRemove: 'build/linux-after-remove.sh',
+    artifactName: 'duo180-office_${version}_${arch}.deb',
+    packageName: 'duo180-office',
   },
   // Same "@genoffice/shell" naming problem as deb: spell the artifact name
   // out (${arch} expands to the rpm arch string, x86_64) and pin the rpm
@@ -626,15 +515,11 @@ const config = {
   // build host (the `rpm` apt package on Ubuntu; CI installs it).
   //
   // publish: null (explicit) keeps the rpm out of the electron-updater feed
-  // and off the CDN entirely: the rpm is a GitHub-Release download only, so
-  // latest-linux.yml keeps listing exactly what the CDN pipeline uploads
-  // (AppImage + deb) and the promote workflow needs no rpm alias.
+  // and off the CDN entirely: the rpm is a GitHub-Release download only.
   rpm: {
-    artifactName: 'genoffice-${version}.${arch}.rpm',
-    packageName: 'genoffice',
+    artifactName: 'duo180-office-${version}.${arch}.rpm',
+    packageName: 'duo180-office',
     publish: null,
-    afterInstall: 'build/linux-after-install.sh',
-    afterRemove: 'build/linux-after-remove.sh',
     // rpmbuild links every packaged ELF file into /usr/lib/.build-id/<hash>.
     // Two Electron apps built on the same Electron release ship identical
     // binaries, so the links are identical too and dnf refuses the install
@@ -652,7 +537,6 @@ const config = {
     assertExtraResourceSources()
     ensureThirdPartyNotices()
     assertModuleTreesPresent()
-    ensureCliBundleCarriesAppVersion()
     if (context.electronPlatformName === 'darwin' && includeMacX64) {
       assertUniversalSidecar()
       assertUniversalVisionOcr()
@@ -715,12 +599,6 @@ if (updateUrl) {
 // CI's "-c.extraMetadata.version=..." CLI override deep-merges with this block,
 // so the version and all injected feature settings survive together.
 const extraMetadata = {}
-if (ga4MeasurementId && ga4ApiSecret) {
-  extraMetadata.genofficeAnalytics = {
-    measurementId: ga4MeasurementId,
-    apiSecret: ga4ApiSecret,
-  }
-}
 if (fontCdnUrl) extraMetadata.genofficeFontCdn = { baseUrl: fontCdnUrl }
 if (Object.keys(extraMetadata).length) config.extraMetadata = extraMetadata
 

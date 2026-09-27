@@ -3,7 +3,7 @@ import { parseDocx, saveDocx } from '@genoffice/docx-engine'
 import JSZip from 'jszip'
 import { describe, expect, it } from 'vitest'
 import { buildDocx } from '../../../packages/docx-engine/tests/helpers/build-docx'
-import { executeOps } from '../src/renderer/ai/ops'
+import { executeOps } from '../src/renderer/ops/ops'
 import {
   blocksToPmDoc,
   inlineToRuns,

@@ -10,7 +10,7 @@
  *
  * This module listens to the same status bar state the controller publishes
  * and, when the active sheet streams from a file, recomputes the statistics
- * from the file itself through the aggregate_range channel (batched sidecar
+ * from the file itself through the file-side aggregator (batched sidecar
  * reads overlaid with this session's edit journal — never the formula
  * engine, never a grid load), then overwrites the published values. When the
  * selection cannot be aggregated (sheet added this session, structural
@@ -24,10 +24,10 @@ import { SheetsSelectionsService } from '@univerjs/sheets'
 import { IStatusBarService } from '@univerjs/sheets-ui'
 import type { RangeBounds } from '@genoffice/xlsx-gateway/domain/cell-address'
 
-import type { RangeAggregate } from './ai/aggregate'
+import type { RangeAggregate } from './range-aggregate'
 import type { LazyWorkbookState, UniverRuntime } from './univer-state'
 
-/** Same per-call budget as the aggregate_range AI tool (post-clamp cells). */
+/** Same per-call budget as the file-side range aggregator (post-clamp cells). */
 const MAX_STATUSBAR_AGGREGATE_CELLS = 1_000_000
 /** Collapses selection-drag bursts into one file read. */
 const RECOMPUTE_DEBOUNCE_MS = 150

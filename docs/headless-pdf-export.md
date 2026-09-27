@@ -1,39 +1,40 @@
-# Headless PDF export
+# Exportación a PDF sin interfaz (headless)
 
-Every "export to PDF" path in GenOffice can be driven without a visible
-editor window, behind one entry point:
-
-```
-<app binary> --headless-export <input-file> --to pdf --out <path> [--json]
-```
-
-The app creates no visible window, hides the macOS dock icon, writes exactly
-one line to stdout and exits. It does **not** take the single-instance lock,
-so it runs happily alongside a GUI instance.
+Toda ruta de "exportar a PDF" de la suite se puede ejecutar sin una ventana de
+editor visible, a través de un único punto de entrada:
 
 ```
-$ GenOffice --headless-export report.docx --to pdf --out report.pdf --json
-{"status":"ok","summary":"Exported /w/report.docx to /w/report.pdf","output_path":"/w/report.pdf"}
+<binario de la app> --headless-export <archivo-de-entrada> --to pdf --out <ruta> [--json]
 ```
 
-Without `--json` the same line is a plain sentence. Both `--flag value` and
-`--flag=value` are accepted.
+La aplicación no crea ninguna ventana visible, oculta el icono del dock en
+macOS, escribe exactamente una línea en stdout y termina. **No** toma el bloqueo
+de instancia única, así que convive sin problema con una instancia con interfaz.
 
-## Exit codes
+```
+$ duo180 Office --headless-export informe.docx --to pdf --out informe.pdf --json
+{"status":"ok","summary":"Exported /w/informe.docx to /w/informe.pdf","output_path":"/w/informe.pdf"}
+```
 
-| code | meaning                                                                         |
-| ---- | ------------------------------------------------------------------------------- |
-| 0    | the PDF was written                                                             |
-| 1    | bad arguments (missing `--out`, a target other than `pdf`, no output directory) |
-| 2    | input file problem (missing, not a file, extension no module can render)        |
-| 3    | conversion failure (unreadable document, renderer crash, timeout)               |
+Sin `--json` esa misma línea es una frase normal. Se aceptan tanto
+`--flag valor` como `--flag=valor`.
 
-On failure the JSON envelope is
-`{"status":"error","summary":…,"error":…}` — one line, newlines folded out.
+## Códigos de salida
 
-## Supported inputs
+| código | significado                                                                          |
+| ------ | ------------------------------------------------------------------------------------ |
+| 0      | el PDF se ha escrito                                                                  |
+| 1      | argumentos incorrectos (falta `--out`, destino distinto de `pdf`, sin carpeta de salida) |
+| 2      | problema con el archivo de entrada (no existe, no es un archivo, extensión que ningún módulo puede renderizar) |
+| 3      | fallo de conversión (documento ilegible, caída del renderer, tiempo de espera agotado) |
 
-| extension                     | module   |
+En caso de fallo, el sobre JSON es
+`{"status":"error","summary":…,"error":…}`, en una sola línea y con los saltos
+de línea convertidos en espacios.
+
+## Entradas admitidas
+
+| extensión                     | módulo   |
 | ----------------------------- | -------- |
 | `.docx`                       | docs     |
 | `.xlsx` `.xlsm` `.xls` `.csv` | sheets   |
@@ -41,46 +42,52 @@ On failure the JSON envelope is
 | `.md` `.markdown`             | markdown |
 | `.html` `.htm`                | html     |
 
-## How it works
+## Cómo funciona
 
-The grammar, the exit codes and the renderer-side waiting helpers live in
-`packages/electron-utils/src/headless-export.ts`; the renderer half is
-imported through the `@genoffice/electron-utils/headless-export` subpath so a
-renderer bundle never pulls in `node:` builtins.
+La gramática, los códigos de salida y los ayudantes de espera del lado del
+renderer viven en `packages/electron-utils/src/headless-export.ts`; la mitad del
+renderer se importa por el subcamino `@genoffice/electron-utils/headless-export`
+para que un bundle de renderer nunca arrastre los builtins de `node:`.
 
-`apps/shell/src/main/headless-export.ts` validates the paths and routes by
-extension to one hidden-window exporter per module
-(`exportDocsPdfHeadless`, `exportSheetsPdfHeadless`, …). Each exporter:
+`apps/shell/src/main/headless-export.ts` valida las rutas y enruta por extensión
+a un exportador de ventana oculta por módulo
+(`exportDocsPdfHeadless`, `exportSheetsPdfHeadless`, …). Cada exportador:
 
-1. creates a `show: false` BrowserWindow with that module's normal preload,
-   sandbox and `backgroundThrottling: false`;
-2. queues the input through the module's existing pending-open path, so the
-   renderer runs its ordinary load pipeline;
-3. lets the renderer wait until the document has settled (docs: pagination
-   slice count stable twice in a row; slides: every picture decoded and the
-   private Office fonts registered; sheets: the workbook fully preloaded) and
-   then call **the same export function the File menu calls**, with the CLI's
-   path in place of the save dialog;
-4. resolves on the renderer's report, and destroys the window.
+1. crea una `BrowserWindow` con `show: false`, el preload normal de ese módulo,
+   sandbox y `backgroundThrottling: false`;
+2. encola la entrada por la ruta de "apertura pendiente" que ya existe en el
+   módulo, para que el renderer ejecute su proceso de carga habitual;
+3. deja que el renderer espere a que el documento se asiente (docs: el número
+   de segmentos de paginación estable dos veces seguidas; slides: cada imagen
+   decodificada y las fuentes privadas de Office registradas; sheets: el libro
+   totalmente precargado) y llame después a **la misma función de exportación
+   que llama el menú Archivo**, con la ruta de la CLI en lugar del diálogo de
+   guardado;
+4. resuelve con el informe del renderer y destruye la ventana.
 
-There is one export function per module — the GUI passes no path and gets a
-dialog, headless passes one and does not — so GUI and CLI output cannot
-drift. Measured on four documents, the two paths produce PDFs that differ
-only in the embedded creation timestamp.
+Hay una única función de exportación por módulo —la interfaz no pasa ruta y
+recibe un diálogo, la versión headless pasa una y no lo recibe—, así que la
+salida de la interfaz y la de la CLI no pueden divergir. Medido sobre cuatro
+documentos, ambas rutas producen PDF que solo difieren en la marca de tiempo de
+creación incrustada.
 
-`isHeadlessMode()` (`packages/electron-utils/src/headless-mode.ts`) is set
-before any editor module boots; it suppresses everything that would surface
-UI after a successful write (opening the export in a tab, revealing it in the
-file manager) and the slides recent-files entry.
+`isHeadlessMode()` (`packages/electron-utils/src/headless-mode.ts`) se activa
+antes de que arranque cualquier módulo de edición; silencia todo lo que
+aparecería en pantalla tras una escritura correcta (abrir la exportación en una
+pestaña, mostrarla en el gestor de archivos) y la entrada de archivos recientes
+de slides.
 
-## Behaviour worth knowing
+## Comportamiento que conviene conocer
 
-- **An unreadable input is an error, not a blank page.** docs and slides
-  answer a corrupt file with an untitled blank document; headless treats "a
-  document is mounted but it never came from disk" as exit 3.
-- **Password-protected documents** cannot be answered without a user, so they
-  fail on the readiness timeout rather than immediately.
-- **Large workbooks** normally wait for the user's "Full Load" click before
-  PDF export is allowed. Headless makes that call itself.
-- **Only the active sheet** is exported for spreadsheets, exactly as in the
-  GUI.
+- **Una entrada ilegible es un error, no una página en blanco.** docs y slides
+  responden a un archivo corrupto con un documento en blanco sin título; la
+  versión headless trata "hay un documento montado pero no vino del disco" como
+  código de salida 3.
+- **Los documentos protegidos con contraseña** no se pueden resolver sin una
+  persona, así que fallan por tiempo de espera de preparación en lugar de
+  fallar de inmediato.
+- **Los libros grandes** normalmente esperan a que el usuario pulse "Carga
+  completa" antes de permitir la exportación a PDF. La versión headless toma
+  esa decisión por sí misma.
+- **Solo se exporta la hoja activa** en las hojas de cálculo, exactamente igual
+  que en la interfaz.

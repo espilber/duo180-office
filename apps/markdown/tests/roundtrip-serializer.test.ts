@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { Editor } from '@tiptap/core'
 import { buildExtensions } from '../src/renderer/editor/extensions'
@@ -123,13 +123,19 @@ describe('opt-in Markdown round trips', () => {
 const root = resolve(import.meta.dirname, '../../..')
 const corpus = execFileSync('git', ['ls-files', '-z', '*.md'], { cwd: root, encoding: 'utf8' })
   .split('\0')
-  .filter(Boolean)
+  // the index lags behind the working tree — entries deleted but not yet
+  // staged (large refactors) are not part of the round-trip corpus
+  .filter((path) => path && existsSync(resolve(root, path)))
 describe('tracked repository Markdown corpus', () => {
   it('includes README variants and a nonempty corpus', () => {
-    expect(corpus.length).toBeGreaterThan(50)
+    // the AI-era prompt corpus is gone with the spike; the sanity check only
+    // guards against a silently-empty corpus (same floor as source-splice)
+    expect(corpus.length).toBeGreaterThan(20)
     expect(corpus.some((path) => /README.*\.md$/.test(path))).toBe(true)
   })
   it.each(corpus)('opens and preserves every byte of %s', (path) => {
+    // a sibling refactor may delete a tracked file after collection; it is out of the corpus then
+    if (!existsSync(resolve(root, path))) return
     const raw = readFileSync(resolve(root, path))
     const { editor, save, body } = open(raw.toString('utf8'))
     expect(() => editor.state.doc.check()).not.toThrow()

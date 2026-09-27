@@ -124,6 +124,32 @@ vi.mock('../../slides/src/main/slides-main', () => ({
   slidesIsDirty: (...args: unknown[]) => slidesIsDirty(...(args as [])),
 }))
 
+// markdown/html are mocked like the four families above: the tab tests never
+// build those views (their factories need Electron protocol mocks the shell
+// suite does not provide), so stubbing them keeps this file independent of the
+// sibling apps' own module graph.
+const createMarkdownView = vi.fn(() => makeFakeView())
+const markdownIsDirty = vi.fn(() => false)
+const requestMarkdownClose = vi.fn(() => Promise.resolve(true))
+
+vi.mock('../../markdown/src/main/markdown-main', () => ({
+  createMarkdownView: (...args: unknown[]) => createMarkdownView(...(args as [])),
+  markdownIsDirty: (...args: unknown[]) => markdownIsDirty(...args),
+  requestMarkdownClose: (...args: unknown[]) => requestMarkdownClose(...(args as [])),
+}))
+
+const createHtmlView = vi.fn(() => makeFakeView())
+const createHtmlPresentView = vi.fn(() => makeFakeView())
+const htmlIsDirty = vi.fn(() => false)
+const requestHtmlClose = vi.fn(() => Promise.resolve(true))
+
+vi.mock('../../html/src/main/html-main', () => ({
+  createHtmlView: (...args: unknown[]) => createHtmlView(...(args as [])),
+  createHtmlPresentView: (...args: unknown[]) => createHtmlPresentView(...args),
+  htmlIsDirty: (...args: unknown[]) => htmlIsDirty(...args),
+  requestHtmlClose: (...args: unknown[]) => requestHtmlClose(...(args as [])),
+}))
+
 import { TabManager } from '../src/main/tab-manager'
 
 const TAB_STRIP_HEIGHT = 40
@@ -223,7 +249,7 @@ describe('opening tabs', () => {
   it('uses module default titles for pathless tabs', () => {
     manager.openSheetsTab()
     manager.openSlidesTab()
-    expect(manager.list().map((t) => t.title)).toEqual(['GenOffice', 'AI Sheets', 'AI Slides'])
+    expect(manager.list().map((t) => t.title)).toEqual(['GenOffice', 'Sheets', 'Slides'])
   })
 
   it('assigns unique, monotonic tab ids', () => {

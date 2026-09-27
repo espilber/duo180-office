@@ -1,27 +1,27 @@
-## Summary
+## Resumen
 
-- What changed?
-- Why is this change needed?
+- ¿Qué ha cambiado?
+- ¿Por qué hace falta este cambio?
 
-## Related issue
+## Incidencia relacionada
 
-Closes #
+Cierra #
 
-## Validation
+## Validación
 
 - [ ] `npm run format:check`
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
 - [ ] `npm test`
 
-List any checks not run and explain why:
+Indica aquí las comprobaciones que no hayas ejecutado y por qué:
 
-## Screenshots or recordings
+## Capturas o grabaciones
 
-Include before/after evidence for visible changes, or write "Not applicable."
+Incluye pruebas de antes y después en cambios visibles, o escribe "No procede."
 
-## Contributor checklist
+## Lista de comprobación para quien contribuye
 
-- [ ] The change is focused and does not include unrelated reformatting or refactoring.
-- [ ] User-facing strings use the existing i18n resources.
-- [ ] File open/save changes include an appropriate round-trip or fidelity test.
+- [ ] El cambio está enfocado y no incluye reformateos ni refactorizaciones sin relación.
+- [ ] Los textos de cara al usuario usan los recursos de i18n existentes.
+- [ ] Los cambios en abrir/guardar archivos incluyen una prueba de ida y vuelta o de fidelidad.

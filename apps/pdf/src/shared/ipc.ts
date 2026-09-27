@@ -1,6 +1,4 @@
-import type { AiPanelPrefs } from '@genoffice/ui'
 import type { Lang } from '@genoffice/i18n'
-import type { AiSettings, AiStreamChunk, AiStreamRequest } from '@genoffice/ai-provider'
 
 export const PDF_CHANNELS = {
   consumePending: 'pdf:consume-pending',
@@ -30,7 +28,6 @@ export const PDF_CHANNELS = {
   exportImages: 'pdf:export-images',
   convertOffice: 'pdf:convert-office',
   createDocument: 'pdf:create-document',
-  generateImage: 'pdf:generate-image',
   listSignatures: 'pdf:list-signatures',
   addSignature: 'pdf:add-signature',
   removeSignature: 'pdf:remove-signature',
@@ -47,8 +44,6 @@ export const PDF_CHANNELS = {
   languageChanged: 'app:language-changed',
   getTheme: 'app:get-theme',
   themeChanged: 'app:theme-changed',
-  getAiPanelPrefs: 'app:get-ai-panel-prefs',
-  aiPanelPrefsChanged: 'app:ai-panel-prefs-changed',
 } as const
 
 export const VISUAL_SIGNATURE_CONTENT_PREFIX = 'GenOffice visual signature field: '
@@ -671,31 +666,6 @@ export type ExportImagesResult =
   | { ok: true; canceled: true }
   | { ok: false; error: string }
 
-/** AI channels are app-wide shared ipcMain handlers (shell registers via docs-main registerAiIpc); pass-through only */
-export const AI_CHANNELS = {
-  getSettings: 'ai:get-settings',
-  gskStatus: 'ai:gsk-status',
-  stream: 'ai:stream',
-  streamChunk: 'ai:stream-chunk',
-  streamCancel: 'ai:stream-cancel',
-  imageSearch: 'ai:image-search',
-  fetchImage: 'ai:fetch-image',
-} as const
-
-export interface ImageSearchResponse {
-  images: Array<{
-    title: string
-    imageUrl: string
-    sourceUrl: string
-    source: string
-    width?: number
-    height?: number
-  }>
-  method: string
-  /** failure reason when method === 'error' */
-  error?: string
-}
-
 /** API exposed by preload to the renderer (window.pdfApi) */
 export interface PdfApi {
   /** Take the pdf path pending for this view (queued at tab creation); null if none */
@@ -752,17 +722,6 @@ export interface PdfApi {
   exportImages(request: ExportImagesRequest): Promise<ExportImagesResult>
   /** Convert the current PDF to Word / Excel / PowerPoint via the shell's local conversion flows */
   convertOffice(format: PdfConvertFormat): Promise<void>
-  /** AI create_document: build a new standalone file in the default folder and open it in a new tab */
-  createDocument(request: CreateDocumentRequest): Promise<CreateDocumentResult>
-  /** Web image search for AI tools (app-wide ai:image-search handler) */
-  imageSearch(query: string, maxResults?: number): Promise<ImageSearchResponse>
-  /** Download an image URL in the main process (SSRF-guarded, avoids CORS); null on failure */
-  fetchImage(url: string): Promise<{ base64: string; mime: string } | null>
-  /** AI image generation via Genspark (gsk); returns a downloadable URL or an error message */
-  generateImage(op: { prompt: string; aspectRatio?: string }): Promise<{
-    url?: string
-    error?: string
-  }>
   /** Saved signatures reusable across documents (persisted in userData), newest first */
   listSavedSignatures(): Promise<SavedSignature[]>
   /** Persist a signature for reuse; returns the updated list (capped, deduplicated) */
@@ -789,17 +748,7 @@ export interface PdfApi {
   onLanguageChanged(handler: (lang: Lang) => void): () => void
   getTheme(): Promise<UiTheme>
   onThemeChanged(handler: (theme: UiTheme) => void): () => void
-  /** AI panel text size + chat-input spellcheck (Settings → General in the shell) */
-  getAiPanelPrefs(): Promise<AiPanelPrefs>
-  setAiPanelPrefs(patch: Partial<AiPanelPrefs>): Promise<AiPanelPrefs>
-  onAiPanelPrefsChanged(handler: (prefs: AiPanelPrefs) => void): () => void
   /** press on the shell chrome (tab strip is a sibling WebContentsView whose
    *  clicks produce no DOM event here) — dismiss open popovers */
   onChromePressed(handler: () => void): () => void
-  getAiSettings(): Promise<AiSettings>
-  /** Genspark login state (gsk); gates the cloud-only generate_image tool */
-  gskStatus(): Promise<{ loggedIn: boolean }>
-  aiStream(request: AiStreamRequest): Promise<void>
-  aiStreamCancel(requestId: string): Promise<void>
-  onAiStream(handler: (chunk: AiStreamChunk) => void): () => void
 }

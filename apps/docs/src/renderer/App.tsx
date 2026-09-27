@@ -13,7 +13,6 @@ import {
 import type { CSSProperties, MouseEvent as ReactMouseEvent, SetStateAction } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import type { Editor } from '@tiptap/core'
-import { handleDocsControl, type ControlRequest } from './control'
 import { DOMParser as PmDOMParser, type Mark as PmMark, Slice as PmSlice } from '@tiptap/pm/model'
 import { NodeSelection, TextSelection, type Command, type Transaction } from '@tiptap/pm/state'
 import { Dropdown, ImageViewer, createZoomWheelClassifier, useAutoSavePref } from '@genoffice/ui'
@@ -47,8 +46,6 @@ import {
 } from './editor/paste-options'
 import { PasteOptionsChip } from './components/PasteOptionsChip'
 import {
-  BLANK_BULLET_NUM_ID,
-  BLANK_ORDERED_NUM_ID,
   DEFAULT_SECTION,
   applyPageNumType,
   customLevelFromNumberingLevel,
@@ -62,7 +59,6 @@ import {
   type NumberingDef,
   type DocProtection,
   type WriteProtection,
-  nextNoteId,
   PAGE_MARK,
   type HeaderFooter,
   type HfImage,
@@ -71,7 +67,6 @@ import {
   type SectionInfo,
   type SectionSettings,
   type SourceInfo,
-  pendingHeadingLevel,
   pictureWatermarkPreviewImage,
   previewFontSettings,
   type StyleInfo,
@@ -82,15 +77,9 @@ import {
   type PictureWatermarkSpec,
   type WatermarkSpec,
 } from '@genoffice/docx-engine'
-import type { AiDocContent, AiSettings, MenuCommand, OpenDocxResult } from '../shared/ipc'
-import { AI_PROVIDERS } from '../shared/ipc'
+import type { MenuCommand, OpenDocxResult } from '../shared/ipc'
 import { ZoteroDocumentController } from './zotero/controller'
-import { AiPanel, AI_REVISION_AUTHOR } from './ai/AiPanel'
-import type { AiCommentsAccess, AiDocExtras, AiHeaderFooterAccess } from './ai/tools'
-import type { AiStyleInfo } from './ai/style-ops'
-import { applyResolvedPageSetup, describeSection, type AiPageSetupAccess } from './ai/page-setup'
-import { patchPendingSectPr, sectionIndexAtBlock } from './ai/pending-sections'
-import { protectedNoteMarkBlock, type AiNotesAccess } from './ai/note-ops'
+import { patchPendingSectPr, sectionIndexAtBlock } from './ops/pending-sections'
 import { applyHfText, hfEditText } from './editor/hf-text'
 import {
   insertHfField,
@@ -103,9 +92,6 @@ import { hfCommitTarget, hfLinked, resolveHf, withHfLink, type HfSectionState } 
 import { hfLayoutResolved, hfPhantomSpec, hfWithPhantom } from './hf-phantom'
 import { textColorValue } from './editor/text-color'
 import { textOutlineCssValue } from './editor/text-outline'
-import { AiAskPopover } from './components/AiAskPopover'
-import { EDIT_QUEUE_MAX, selectionForAnchor, type DocsEditQueueItem } from './ai/edit-queue'
-import { addQueueAnchor, clearQueueAnchors, removeQueueAnchors } from './editor/ai-queue-anchors'
 import {
   asianCharCount,
   countWords,
@@ -267,7 +253,6 @@ import {
 } from './components/icons'
 import { ToastHost } from './components/toast'
 import {
-  AI_REWRITE_ACK_KEY,
   LinkInsertModal,
   TableInsertModal,
   applyParagraphStyle,
@@ -363,7 +348,6 @@ import {
   type PendingNumbering,
 } from './doc-state'
 import {
-  applyAiDocContent as applyAiDocContentImpl,
   exportPdf as exportPdfImpl,
   exportHtml as exportHtmlImpl,
   exportImages as exportImagesImpl,
@@ -399,7 +383,6 @@ const WORD_COUNT_THROTTLE_MS = 400
 /** consecutive follow-up passes a pass may schedule for itself */
 const MAX_FOLLOW_UP_PASSES = 6
 import { runHeadlessDocumentExport } from './headless-export'
-import { installMcpBridge } from './mcp-bridge'
 import {
   clampDocsZoom,
   DOCS_ZOOM_MAX,
@@ -697,16 +680,6 @@ function makeGapNotesEl(
   return wrap
 }
 
-const DEFAULT_SETTINGS: AiSettings = {
-  provider: 'anthropic',
-  providers: Object.fromEntries(
-    AI_PROVIDERS.map((p) => [
-      p.id,
-      { apiKey: '', model: p.defaultModel, baseUrl: p.needsBaseUrl ? '' : undefined },
-    ]),
-  ) as AiSettings['providers'],
-}
-
 /** Table menu items that are plain editor commands (the dialogs and Distribute Rows are handled inline) */
 const TABLE_MENU_COMMANDS: Partial<Record<MenuCommand, (widthPx: number) => Command>> = {
   'table-insert-rows-above': (w) => insertRowsOrColumns(1, 'above', w),
@@ -744,9 +717,7 @@ export function App() {
   /** a phased open is still streaming the document tail: editor stays read-only */
   const [docLoading, setDocLoading] = useState(false)
   /** true until the pending-open / new-blank boot checks settle; the start screen stays hidden meanwhile */
-  const bootPendingRef = useRef<Promise<[OpenDocxResult, boolean, AiDocContent | null]> | null>(
-    null,
-  )
+  const bootPendingRef = useRef<Promise<[OpenDocxResult, boolean]> | null>(null)
   const bootHandledRef = useRef(false)
   /** password prompt for an ECMA-376 encrypted docx; submit retries via openDocxDecrypt */
   const [docPwdPrompt, setDocPwdPrompt] = useState<{
@@ -765,15 +736,11 @@ export function App() {
     errorKey: '' | 'appDocPwdWrong'
   } | null>(null)
   const [_recent, setRecent] = useState<string[]>([])
-  const [settings, setSettings] = useState<AiSettings>(DEFAULT_SETTINGS)
-  const [showAi, setShowAi] = useState(() => localStorage.getItem('aidocs.showAi') !== '0')
   const [spellcheck, setSpellcheck] = useState(spellcheckEnabled)
   const [largeDocSpellOff, setLargeDocSpellOff] = useState(false)
   const spellcheckActive = spellcheck && !largeDocSpellOff
   const spellcheckActiveRef = useRef(spellcheckActive)
   spellcheckActiveRef.current = spellcheckActive
-  /** Increments on every open/new document: AiPanel remounts by key to reset the conversation and history (save path changes don't bump it, so the session continues) */
-  const [aiPanelKey, setAiPanelKey] = useState(0)
   const [ribbonTabRequest, setRibbonTabRequest] = useState<{ tab: string; nonce: number } | null>(
     null,
   )
@@ -1024,21 +991,6 @@ export function App() {
   const [autoSave, setAutoSave] = useAutoSavePref('aidocs.autoSave', window.desktop)
   // tab closed but this renderer kept alive (shell freeze workaround): go inert
   const [tornDown, setTornDown] = useState(false)
-  const [aiPreset, setAiPreset] = useState<{
-    text: string
-    nonce: number
-    autoRun?: boolean
-  } | null>(null)
-  // selection-scoped AI edit queue (anchors live as editor decorations)
-  const [editQueue, setEditQueue] = useState<DocsEditQueueItem[]>([])
-  const editQueueRef = useRef(editQueue)
-  editQueueRef.current = editQueue
-  const queueSeqRef = useRef(0)
-  // opening/creating a document drops every anchor with setContent; the queue
-  // must not leak the previous file's items (they would sit orphaned at the cap)
-  useEffect(() => {
-    setEditQueue([])
-  }, [aiPanelKey])
   const [docCss, setDocCss] = useState('')
   // Live CJK-ness of the body while editing; overrides docCss's --doc-line-factor
   const [liveDocCjk, setLiveDocCjk] = useState<boolean | null>(null)
@@ -1493,12 +1445,7 @@ export function App() {
 
   useEffect(() => {
     void window.desktop.getRecentFiles().then(setRecent)
-    void window.desktop.getAiSettings().then(setSettings)
   }, [])
-
-  useEffect(() => {
-    localStorage.setItem('aidocs.showAi', showAi ? '1' : '0')
-  }, [showAi])
 
   useEffect(() => {
     localStorage.setItem('aidocs.showNav', showNav ? '1' : '0')
@@ -1843,11 +1790,11 @@ export function App() {
 
   useEffect(() => window.desktop.onTeardown?.(() => setTornDown(true)), [])
 
-  // keep the native View menu's checkmarks (AI Sidebar / Dark Mode) in sync
+  // keep the native View menu's checkmark (Dark Mode) in sync
   // (the IPC field keeps its historical darkCanvas name)
   useEffect(() => {
-    window.desktop.reportViewMenuState?.({ aiSidebar: showAi, darkCanvas: darkPage })
-  }, [showAi, darkPage])
+    window.desktop.reportViewMenuState?.({ darkCanvas: darkPage })
+  }, [darkPage])
 
   // Crash-recovery copy: while the document is dirty, push a serialized
   // copy to the main process every 30s; a normal save (or discarding on close) removes
@@ -1859,13 +1806,6 @@ export function App() {
     }, 30_000)
     return () => window.clearInterval(timer)
   }, [tornDown])
-
-  // MCP bridge: let an external agent drive this visible editor. Commands arrive
-  // from the shell main process and run against the live ctx (refs refresh per render).
-  useEffect(() => {
-    if (tornDown || !editor) return
-    return installMcpBridge({ getCtx: () => fileCtxRef.current })
-  }, [tornDown, editor])
 
   // Recompute the document-level line-height factor while editing:
   // docStyleCss decides it once at parse time, so typing CJK into a blank document
@@ -1936,9 +1876,7 @@ export function App() {
     setShowPrintDialog,
     setStatus,
     setRecent,
-    setShowAi,
     setDoc,
-    setAiPanelKey,
     setDocCss,
     setDocLoading,
     setReadMode,
@@ -2110,18 +2048,17 @@ export function App() {
     const unsubscribe = window.desktop.onOpenDocx((result) => {
       void commitOpenedFile(result)
     })
-    // With no pending file the window lands directly in the editor on a blank document
-    // (the AI panel carries the generate-from-prompt flow). StrictMode runs the mount
+    // With no pending file the window lands directly in the editor on a blank document.
+    // StrictMode runs the mount
     // effect twice but the pending queues can only be consumed once, so the consume
     // Promise lives in a ref and its result is processed only once.
     bootPendingRef.current ??= Promise.all([
       window.desktop.consumePendingOpenDocx(),
       // Still consume the one-shot new-blank flag so it doesn't leak into the next open
       window.desktop.consumeNewBlankDoc(),
-      window.desktop.consumeAiDocContent(),
     ])
     void bootPendingRef.current
-      .then(async ([pending, , aiContent]) => {
+      .then(async ([pending]) => {
         if (bootHandledRef.current) return
         bootHandledRef.current = true
         // A failed open (corrupt file etc.) falls back to a blank document —
@@ -2130,13 +2067,6 @@ export function App() {
         // 'password': the prompt is up; its cancel path lands on blank instead.
         const outcome = pending ? await loadFile(pending) : 'canceled'
         if (outcome === 'canceled') await resetFile()
-        if (aiContent && !pending) {
-          // fileCtxRef refreshes per render: wait until resetFile's setDoc landed
-          for (let i = 0; i < 100 && !fileCtxRef.current.doc; i++) {
-            await new Promise((resolve) => setTimeout(resolve, 20))
-          }
-          await applyAiDocContentImpl(fileCtxRef.current, aiContent)
-        }
       })
       // Open failures also land on a blank document, or the tab stays at "Opening…" forever
       .catch(() => {
@@ -5064,19 +4994,6 @@ export function App() {
     })
   }, [editor, zoom, pageInfo.total])
 
-  // Review > Editor, the Tools menu and Word's F7 all run the same AI proofread
-  // behind the one-time whole-document-rewrite acknowledgement
-  const runAiProofread = useCallback(() => {
-    if (
-      localStorage.getItem(AI_REWRITE_ACK_KEY) !== '1' &&
-      !window.confirm(t('ribbonAiRewriteConfirm'))
-    )
-      return
-    localStorage.setItem(AI_REWRITE_ACK_KEY, '1')
-    setShowAi(true)
-    setAiPreset({ text: t('ribbonEditorPrompt'), nonce: Date.now(), autoRun: true })
-  }, [])
-
   // "has unsaved changes" check shared by the close guard and autosave; refreshed on every
   // render (all edit paths forceRender), so the guard's query reads the latest value
   const anyDirtyRef = useRef(false)
@@ -5130,21 +5047,6 @@ export function App() {
       window.removeEventListener('blur', tick)
     }
   }, [tornDown, autoSave, doc, editor, save])
-
-  // After an AI run finishes on a never-saved document, silently save it once: the
-  // first save derives the file name from the first heading (see deriveAutoFileName
-  // in file-actions), which also renames the shell tab — mirrors slides, where AI
-  // generation names and persists the draft deck.
-  useEffect(() => {
-    const handler = () => {
-      const cur = fileCtxRef.current
-      if (!cur.doc || cur.doc.filePath || !anyDirtyRef.current) return
-      if (editor?.view.composing) return
-      void save(false, true)
-    }
-    window.addEventListener('ai-docs-run-done', handler)
-    return () => window.removeEventListener('ai-docs-run-done', handler)
-  }, [editor, save])
 
   useEffect(() => {
     // editing shortcuts only fire when focus is in an editor surface (main
@@ -5382,11 +5284,6 @@ export function App() {
           insertField(instr)
         }
       }
-      // Proofread F7 (Word's spelling & grammar check)
-      if (e.key === 'F7' && !e.shiftKey && doc) {
-        e.preventDefault()
-        runAiProofread()
-      }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -5400,7 +5297,6 @@ export function App() {
     startNewComment,
     insertNote,
     insertField,
-    runAiProofread,
     trackChangesForced,
   ])
 
@@ -5460,9 +5356,6 @@ export function App() {
         case 'zoom-whole-page':
           zoomFit('page')
           break
-        case 'toggle-ai':
-          setShowAi((v) => !v)
-          break
         case 'toggle-dark':
           setDarkPage((v) => !v)
           break
@@ -5497,9 +5390,6 @@ export function App() {
           break
         case 'word-count':
           if (doc) openStats()
-          break
-        case 'ai-proofread':
-          if (doc) runAiProofread()
           break
         case 'shortcuts':
           setShowShortcuts(true)
@@ -5618,7 +5508,6 @@ export function App() {
     zoomFit,
     openStats,
     startNewComment,
-    runAiProofread,
     toggleTableGridlines,
     tableSectionWidthPx,
   ])
@@ -5946,12 +5835,6 @@ export function App() {
     if (gap) startGapHfEditRef.current(gap)
   }, [])
 
-  // genoffice CLI (`open --block`, `selection`): the shell evaluates this hook
-  useEffect(() => {
-    ;(window as unknown as Record<string, unknown>).__genofficeControl = (req: ControlRequest) =>
-      handleDocsControl(req, editor, doc !== null)
-  })
-
   useEffect(() => (editor ? installSelectionBar(editor) : undefined), [editor])
 
   // e2e/automation hook: lets tests drive open/edit/save without native dialogs
@@ -6017,175 +5900,16 @@ export function App() {
   ribbonStylesRef.current = ribbonStyles
 
   /** every function prop of the memoized Ribbon, with stable identities (dispatches into the latest render's closures) */
-  // ---- selection-scoped AI edit queue ----
-  const getQueueItem = useCallback(
-    (qid: string) => editQueueRef.current.find((item) => item.qid === qid),
-    [],
-  )
-  const queueAdd = (instruction: string): void => {
-    const { from, to, empty } = editor.state.selection
-    if (empty || editQueueRef.current.length >= EDIT_QUEUE_MAX) return
-    const qid = `q${++queueSeqRef.current}`
-    addQueueAnchor(editor, qid, from, to)
-    const capturedText = editor.state.doc
-      .textBetween(from, to, ' ', ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 80)
-    setEditQueue((queue) => [...queue, { qid, instruction, capturedText }])
-  }
-  const queueUpdate = (qid: string, instruction: string): void =>
-    setEditQueue((queue) => queue.map((i) => (i.qid === qid ? { ...i, instruction } : i)))
-  const queueRemove = (qid: string): void => {
-    removeQueueAnchors(editor, [qid])
-    setEditQueue((queue) => queue.filter((i) => i.qid !== qid))
-  }
-  const queueClear = (): void => {
-    clearQueueAnchors(editor)
-    setEditQueue([])
-  }
-  /** a submission hands its items to the run and drops them from the queue */
-  const queueConsume = (qids: string[]): void => {
-    removeQueueAnchors(editor, qids)
-    setEditQueue((queue) => queue.filter((i) => !qids.includes(i.qid)))
-  }
-  const queueFocus = (qid: string): void => {
-    const selection = selectionForAnchor(editor, qid)
-    if (!selection) return
-    editor.view.dispatch(editor.state.tr.setSelection(selection).scrollIntoView())
-    editor.view.focus()
-  }
-  const askSendNow = (text: string): void => {
-    setShowAi(true)
-    setAiPreset({ text, nonce: Date.now(), autoRun: true })
-  }
-
-  // AI comment tools run the same review-actions code paths as the comments pane
-  const aiCommentsAccess = useMemo<AiCommentsAccess>(
-    () => ({
-      list: () => reviewCtxRef.current.comments,
-      reply: (parentId, text) =>
-        replyToCommentImpl(reviewCtxRef.current, parentId, text, AI_REVISION_AUTHOR),
-      resolve: (id) => {
-        const ctx = reviewCtxRef.current
-        if (!ctx.comments.some((c) => c.id === id)) return false
-        resolveCommentImpl(ctx, id, true)
-        return true
-      },
-      add: (range, text, meta) =>
-        addCommentAtImpl(
-          reviewCtxRef.current,
-          range,
-          text,
-          meta.author ?? AI_REVISION_AUTHOR,
-          meta.initials,
-        ),
-      remove: (id) => {
-        const ctx = reviewCtxRef.current
-        if (!ctx.comments.some((c) => c.id === id)) return false
-        deleteCommentImpl(ctx, id)
-        return true
-      },
-    }),
-    [],
-  )
-
-  // AI note tools: the lists mirror this render's writes so two inserts in one
-  // agent batch mint distinct ids before React state catches up
-  const aiNotesMirror = useRef<Record<'footnote' | 'endnote', NoteInfo[] | null>>({
-    footnote: null,
-    endnote: null,
-  })
-  useEffect(() => {
-    aiNotesMirror.current = { footnote: null, endnote: null }
-  }, [footnotes, endnotes])
-  const aiNotesAccess = useMemo<AiNotesAccess>(() => {
-    const list = (kind: 'footnote' | 'endnote') =>
-      aiNotesMirror.current[kind] ??
-      (kind === 'footnote' ? reviewCtxRef.current.footnotes : reviewCtxRef.current.endnotes)
-    const commit = (kind: 'footnote' | 'endnote', next: NoteInfo[]) => {
-      aiNotesMirror.current[kind] = next
-      ;(kind === 'footnote' ? reviewCtxRef.current.setFootnotes : reviewCtxRef.current.setEndnotes)(
-        next,
-      )
-      reviewCtxRef.current.setNotesDirty(true)
-    }
-    return {
-      list,
-      add: (kind, text) => {
-        const id = nextNoteId(list(kind))
-        commit(kind, [...list(kind), { id, text }])
-        return id
-      },
-      remove: (kind, id) => {
-        const current = list(kind)
-        if (!current.some((n) => n.id === id)) return false
-        commit(
-          kind,
-          current.filter((n) => n.id !== id),
-        )
-        return true
-      },
-      replace: (kind, id, next) => {
-        const current = list(kind)
-        if (!current.some((n) => n.id === id)) return false
-        commit(
-          kind,
-          current.map((n) => (n.id === id ? next : n)),
-        )
-        return true
-      },
-      protectedMarkBlock: (kind, id) => {
-        const { editor, doc } = reviewCtxRef.current
-        if (!editor || !doc) return null
-        return protectedNoteMarkBlock(
-          editor.state.doc,
-          (block) =>
-            typeof block.attrs.genXml === 'string'
-              ? block.attrs.genXml
-              : typeof block.attrs.docxIndex === 'number'
-                ? (doc.parsed.blocks[block.attrs.docxIndex]?.originalXml ?? '')
-                : '',
-          kind,
-          id,
-        )
-      },
-    }
-  }, [])
-
-  // AI header/footer tool: reads the live HF state and writes through the same
-  // commit path as on-canvas editing (variant routing, per-section edits, dirty flags).
-  // The overlay mirrors this render's AI writes: an agent batch runs several tools
-  // between renders, so a read right after a set must not see the pre-write state
-  // (same pitfall as the comments id-minting ref mirror). Recreated per render,
-  // by which time React state has caught up.
-  const aiHfCtx = {
-    overlay: new Map<string, HeaderFooter>(),
-    valueOf(kind: 'header' | 'footer', view: HfView): HeaderFooter | null {
-      const pending = this.overlay.get(`${kind}:${view}`)
-      if (pending) return pending
-      return hfValueAt(kind === 'header' ? 0 : lastSectionIdx, kind, view)
-    },
-    commit: commitHf,
-    titlePg,
-    evenOddHf,
-    multiHf,
-    locked: isProtected || readMode,
-  }
-  const aiHfCtxRef = useRef(aiHfCtx)
-  aiHfCtxRef.current = aiHfCtx
-  // AI style / watermark tools read and write the same pending stores the save path drains.
-  // The upserts ref mirrors the state synchronously: an agent turn runs several style tools
-  // between renders, so a define_style followed by applyStyle must see the pending entry.
-  const aiStyleUpsertsRef = useRef(styleUpserts)
-  aiStyleUpsertsRef.current = styleUpserts
-  /** queue a style definition for the next save; shared by the AI tools and the Styles pane */
+  // style definitions pending write-back (key = styleId), saved via SaveOptions.styleUpserts
+  const styleUpsertsRef = useRef(styleUpserts)
+  styleUpsertsRef.current = styleUpserts
+  /** queue a style definition for the next save; shared by the Styles pane */
   const upsertStyleDef = useCallback((up: StyleUpsert): string | null => {
     const ctx = fileCtxRef.current
     if (!ctx.doc) return 'no document is open'
-    const prev = aiStyleUpsertsRef.current[up.styleId]
+    const prev = styleUpsertsRef.current[up.styleId]
     const next = {
-      ...aiStyleUpsertsRef.current,
+      ...styleUpsertsRef.current,
       [up.styleId]: prev
         ? {
             ...prev,
@@ -6195,248 +5919,10 @@ export function App() {
           }
         : up,
     }
-    aiStyleUpsertsRef.current = next
+    styleUpsertsRef.current = next
     ctx.setStyleUpserts(next)
     return null
   }, [])
-  const aiDocExtras = useMemo<AiDocExtras>(
-    () => ({
-      styles: {
-        list: () => {
-          const ctx = fileCtxRef.current
-          const out = new Map<string, AiStyleInfo>()
-          for (const s of ctx.doc?.parsed.styles.values() ?? []) {
-            if (s.linkedCharShell) continue
-            out.set(s.styleId, {
-              styleId: s.styleId,
-              name: s.name,
-              type: s.type,
-              ...(s.basedOn ? { basedOn: s.basedOn } : {}),
-              ...(s.headingLevel ? { headingLevel: s.headingLevel } : {}),
-            })
-          }
-          const upserts = aiStyleUpsertsRef.current
-          const parsed = (id: string) => ctx.doc?.parsed.styles.get(id)
-          for (const up of Object.values(upserts)) {
-            const cur = out.get(up.styleId)
-            const headingLevel = pendingHeadingLevel(up.styleId, (id) => upserts[id], parsed)
-            out.set(up.styleId, {
-              styleId: up.styleId,
-              name: up.name ?? cur?.name ?? up.styleId,
-              type: cur?.type ?? up.type ?? 'paragraph',
-              ...(up.basedOn === undefined
-                ? cur?.basedOn
-                  ? { basedOn: cur.basedOn }
-                  : {}
-                : up.basedOn
-                  ? { basedOn: up.basedOn }
-                  : {}),
-              ...(headingLevel ? { headingLevel } : {}),
-              pending: true,
-            })
-          }
-          return [...out.values()]
-        },
-        upsert: upsertStyleDef,
-      },
-      watermark: {
-        current: () => fileCtxRef.current.watermark,
-        set: (spec) => {
-          const ctx = fileCtxRef.current
-          if (!ctx.doc) return 'no document is open'
-          if (spec && 'image' in spec) {
-            ctx.setWatermark(null)
-            ctx.setWatermarkStyle(null)
-            ctx.setWatermarkPicture(spec)
-          } else if (spec) {
-            const { text, ...style } = spec
-            ctx.setWatermark(text)
-            ctx.setWatermarkStyle(Object.keys(style).length > 0 ? style : null)
-            ctx.setWatermarkPicture(null)
-          } else {
-            ctx.setWatermark(null)
-            ctx.setWatermarkStyle(null)
-            ctx.setWatermarkPicture(null)
-          }
-          ctx.setWatermarkDirty(true)
-          return null
-        },
-      },
-    }),
-    [upsertStyleDef],
-  )
-
-  const aiHfAccess = useMemo<AiHeaderFooterAccess>(
-    () => ({
-      read: () => {
-        const ctx = aiHfCtxRef.current
-        const textOf = (kind: 'header' | 'footer', view: HfView) => {
-          const value = ctx.valueOf(kind, view)
-          return value ? hfEditText(value) : ''
-        }
-        return {
-          header: textOf('header', 'default'),
-          footer: textOf('footer', 'default'),
-          headerFirst: ctx.titlePg ? textOf('header', 'first') : null,
-          footerFirst: ctx.titlePg ? textOf('footer', 'first') : null,
-          headerEven: ctx.evenOddHf ? textOf('header', 'even') : null,
-          footerEven: ctx.evenOddHf ? textOf('footer', 'even') : null,
-          titlePg: ctx.titlePg,
-          evenOddHf: ctx.evenOddHf,
-          multiSection: ctx.multiHf,
-        }
-      },
-      set: (kind, view, text) => {
-        const ctx = aiHfCtxRef.current
-        if (ctx.locked) return 'the document is read-only; headers/footers cannot be edited'
-        if (view === 'first' && !ctx.titlePg) {
-          setTitlePg(true)
-          setTitlePgDirty(true)
-          ctx.titlePg = true
-        }
-        if (view === 'even' && !ctx.evenOddHf) {
-          setEvenOddHf(true)
-          setEvenOddHfDirty(true)
-          ctx.evenOddHf = true
-        }
-        const next = applyHfText(ctx.valueOf(kind, view), text)
-        ctx.commit(kind, next, view)
-        ctx.overlay.set(`${kind}:${view}`, next)
-        return null
-      },
-    }),
-    [],
-  )
-
-  // AI page-setup tool: reads the live section list (block ranges in PM
-  // indexes) and writes through the Layout tab's paths. The mirror lets a
-  // batch of tool calls between renders see its own writes: `sections` as they
-  // stand after each call and the sectPr each would save to.
-  const aiPageCtx = {
-    sections: sections.map((s) => ({ ...s })),
-    effective: sections.map((_s, i) => effectiveSectPrXml(i) ?? ''),
-    locked: isProtected || readMode,
-    isBlank: !doc,
-  }
-  const aiPageCtxRef = useRef(aiPageCtx)
-  aiPageCtxRef.current = aiPageCtx
-  const aiPageSetupAccess = useMemo<AiPageSetupAccess>(
-    () => ({
-      list: () => {
-        const ctx = aiPageCtxRef.current
-        if (!editor || ctx.isBlank || ctx.sections.length === 0) return []
-        const pmDoc = editor.state.doc
-        const ranges = ctx.sections.map(() => ({ first: -1, last: -1 }))
-        for (let i = 0; i < pmDoc.childCount; i++) {
-          const r = ranges[sectionIndexAtBlock(pmDoc, ctx.sections, i)]!
-          if (r.first < 0) r.first = i
-          r.last = i
-        }
-        return ctx.sections.map((sec, i) =>
-          describeSection(sec, i, Math.max(ranges[i]!.first, 0), Math.max(ranges[i]!.last, 0)),
-        )
-      },
-      current: (index) => aiPageCtxRef.current.sections[index],
-      set: (index, resolved) => {
-        const ctx = aiPageCtxRef.current
-        if (ctx.locked) return 'the document is read-only; the page setup cannot be changed'
-        const sec = ctx.sections[index]
-        if (!sec || !editor) return `section ${index} does not exist`
-        const nextXml = applyResolvedPageSetup(ctx.effective[index] ?? sec.sectPrXml, resolved)
-        const next: SectionInfo = {
-          ...sec,
-          settings: resolved.settings,
-          titlePg: resolved.titlePg ?? sec.titlePg,
-          ...(resolved.pgNum
-            ? { pageNumberStart: resolved.pgNum.start, pageNumberFmt: resolved.pgNum.fmt }
-            : {}),
-        }
-        if (sec.pendingBreak) {
-          if (!patchPendingSectPr(editor, ctx.sections, index, nextXml))
-            return `section ${index} was removed from the document`
-          next.sectPrXml = nextXml
-        }
-        ctx.sections[index] = next
-        ctx.effective[index] = nextXml
-        setSections((prev) => prev.map((s, i) => (i === index ? next : s)))
-        if (sec.pendingBreak) return null
-        if (ctx.sections.length <= 1 || index === ctx.sections.length - 1) {
-          setSection(resolved.settings)
-          setSectionDirty(true)
-          if (resolved.titlePg !== undefined) {
-            setTitlePg(resolved.titlePg)
-            setTitlePgDirty(true)
-          }
-          if (resolved.pgNum) setPgNumEdit(resolved.pgNum)
-        } else {
-          setSectionsDirty((d) => (d.includes(index) ? d : [...d, index]))
-          if (resolved.pgNum) setPgNumDirtySections((d) => (d.includes(index) ? d : [...d, index]))
-        }
-        return null
-      },
-      insertBreak: (type, afterBlockIndex) => {
-        const ctx = aiPageCtxRef.current
-        if (ctx.locked) return 'the document is read-only; a section break cannot be inserted'
-        if (!editor || ctx.isBlank) return 'no document is open'
-        const pmDoc = editor.state.doc
-        const ownerIdx = sectionIndexAtBlock(pmDoc, ctx.sections, Math.max(afterBlockIndex, 0))
-        const owner = ctx.sections[ownerIdx]
-        const copyXml = ctx.effective[ownerIdx]
-        insertSectionBreakRef.current(
-          type,
-          afterBlockIndex,
-          copyXml ? { sectPr: copyXml, sections: ctx.sections } : undefined,
-        )
-        if (!owner || !copyXml) return null
-        // until the save re-reads the file, the new section is modelled here: it
-        // owns the blocks up to the break (by docxIndex), the owner keeps the rest
-        let lastDocx: number | null = null
-        for (let i = Math.min(afterBlockIndex, pmDoc.childCount - 1); i >= 0; i--) {
-          const di = pmDoc.child(i).attrs?.docxIndex as number | null | undefined
-          if (di !== null && di !== undefined) {
-            lastDocx = di
-            break
-          }
-        }
-        const created: SectionInfo = {
-          ...owner,
-          pendingBreak: true,
-          sectPrXml: copyXml,
-          lastBlockIndex: lastDocx ?? owner.firstBlockIndex - 1,
-        }
-        // the remainder starts with the chosen type; a pending owner's sectPr was
-        // patched in place by insertSectionBreak, the others get it written on save
-        const remainderXml = applySectionStartType(copyXml, type)
-        const ownerNext: SectionInfo = {
-          ...owner,
-          firstBlockIndex: created.lastBlockIndex + 1,
-          startType: type,
-          ...(owner.pendingBreak ? { sectPrXml: remainderXml } : {}),
-        }
-        ctx.sections.splice(ownerIdx, 0, created)
-        ctx.sections[ownerIdx + 1] = ownerNext
-        ctx.effective.splice(ownerIdx, 0, copyXml)
-        ctx.effective[ownerIdx + 1] = remainderXml
-        setSections((prev) => {
-          const next = [...prev]
-          next.splice(ownerIdx, 0, created)
-          if (next[ownerIdx + 1]) {
-            next[ownerIdx + 1] = {
-              ...next[ownerIdx + 1]!,
-              firstBlockIndex: ownerNext.firstBlockIndex,
-              startType: type,
-            }
-          }
-          return next
-        })
-        const shift = (d: number[]) => d.map((i) => (i >= ownerIdx ? i + 1 : i))
-        setSectionsDirty(shift)
-        setPgNumDirtySections(shift)
-        return null
-      },
-    }),
-    [editor],
-  )
 
   const ribbonActions = useStableCallbacks({
     allocateNumId: (kind: 'bullet' | 'ordered') => allocateListNumId(kind),
@@ -6459,7 +5945,6 @@ export function App() {
     onOpen: () => void openFile(),
     onSave: () => void save(false),
     onSaveAs: () => void save(true),
-    onToggleAi: () => setShowAi((v) => !v),
     onSection: (next: SectionSettings) => {
       // layout applies to the cursor's section; the final section's sectPr goes through SaveOptions.section (also drives canvas geometry)
       setSections((prev) =>
@@ -6533,11 +6018,6 @@ export function App() {
     onZoomFit: zoomFit,
     onZoomDialog: () => setShowZoomDialog(true),
     onDarkPage: setDarkPage,
-    onAiPreset: (text: string) => {
-      // Word's Editor / Translate start working as soon as they're clicked
-      setShowAi(true)
-      setAiPreset({ text, nonce: Date.now(), autoRun: true })
-    },
     onHeader: (next: HeaderFooter) => commitHfAt(0, 'header', headerAreaView, next),
     onPageNumFormat: openPgNumModal,
     onInsertField: insertField,
@@ -6820,7 +6300,6 @@ export function App() {
         docDefaults={doc?.parsed.docDefaults}
         documentListPresets={documentLists}
         recentListPresets={recentLists}
-        showAi={showAi}
         section={sections[activeSection]?.settings ?? section}
         tableGridlines={tableGridlines}
         activeSection={sections.length > 1 ? activeSection : null}
@@ -6872,37 +6351,6 @@ export function App() {
       />
 
       <div className="app-main">
-        {doc && (
-          <div className={`ai-dock${showAi ? '' : ' collapsed'}`}>
-            {/* always mounted: collapse must not drop state or in-flight runs */}
-            <AiPanel
-              key={aiPanelKey}
-              editor={editor}
-              blocks={doc.parsed.blocks}
-              settings={settings}
-              docEmpty={wordCount === 0}
-              numIdFallback={
-                doc.isBlank ? { bullet: BLANK_BULLET_NUM_ID, ordered: BLANK_ORDERED_NUM_ID } : null
-              }
-              preset={aiPreset}
-              open={showAi}
-              onExpand={() => setShowAi(true)}
-              onCollapse={() => setShowAi(false)}
-              filePath={doc?.filePath ?? null}
-              editQueue={editQueue}
-              onQueueEditInstruction={queueUpdate}
-              onQueueRemove={queueRemove}
-              onQueueClear={queueClear}
-              onQueueFocus={queueFocus}
-              onQueueConsume={queueConsume}
-              commentsAccess={aiCommentsAccess}
-              hfAccess={aiHfAccess}
-              pageSetupAccess={aiPageSetupAccess}
-              docExtras={aiDocExtras}
-              notesAccess={aiNotesAccess}
-            />
-          </div>
-        )}
         <div className="app-content">
           <div className={workspaceClass}>
             {doc && showFind && (
@@ -6928,17 +6376,6 @@ export function App() {
                 zoom={zoom / 100}
                 pageInfo={pageInfo}
                 onClose={closeNav}
-              />
-            )}
-            {doc && (
-              <AiAskPopover
-                editor={editor}
-                queueFull={editQueue.length >= EDIT_QUEUE_MAX}
-                getItem={getQueueItem}
-                onSendNow={askSendNow}
-                onQueueAdd={queueAdd}
-                onQueueUpdate={queueUpdate}
-                onQueueRemove={queueRemove}
               />
             )}
             {doc && <PasteOptionsChip editor={editor} />}
@@ -7404,10 +6841,6 @@ export function App() {
           onNewComment={startNewComment}
           onViewImage={setViewImage}
           onSaveImageAs={saveImageAs}
-          onAiPreset={(text) => {
-            setShowAi(true)
-            setAiPreset({ text, nonce: Date.now(), autoRun: true })
-          }}
           onRestartNumbering={restartNumbering}
           onContinueNumbering={continueNumbering}
           onSetNumberingValue={() => setListDialog('value')}
