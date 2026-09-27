@@ -7,6 +7,10 @@
   </a>
 </p>
 
+<blockquote>
+<p><b>duo180 Office</b> es un fork de <a href="https://github.com/genspark-ai/genoffice">GenOffice</a> (licencia Apache-2.0), mantenido en <a href="https://github.com/espilber/duo180-office">espilber/duo180-office</a>. Este fork trabaja en una suite ofimática simplificada, sin la capa de IA del proyecto original. El código y la licencia originales se conservan: consulta <code>LICENSE</code> y <code>NOTICE</code>. El resto de este documento es el README original de GenOffice.</p>
+</blockquote>
+
 <h1 align="center">GenOffice</h1>
 
 <p align="center"><b>The world's first full-featured open-source AI Office suite.</b><br>
