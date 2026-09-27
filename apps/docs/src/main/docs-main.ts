@@ -4095,7 +4095,6 @@ export function buildDocsMenu(): void {
         { type: 'separator' },
         { label: tm('menuPageSetup'), click: () => sendCommand('page-setup') },
         { label: tm('menuExportPdf'), click: () => sendCommand('export-pdf') },
-        { label: tm('menuExportHtml'), click: () => sendCommand('export-html') },
         { label: tm('menuExportImages'), click: () => sendCommand('export-images') },
         {
           label: tm('menuPrint'),
