@@ -106,6 +106,7 @@ import UniverPresetSheetsTableEnUS from '@univerjs/preset-sheets-table/locales/e
 import '@univerjs/preset-sheets-table/lib/index.css'
 import { greenTheme } from '@univerjs/themes'
 import { createUniver } from './create-univer'
+import { installGridAutoResize } from './grid-auto-resize'
 
 import { type WorkbookOperation } from '@genoffice/xlsx-gateway/domain/workbook-dsl'
 import {
@@ -839,6 +840,14 @@ export function App({
     installFilterRangeOutlineSuppression(runtime)
     loadSnapshotIntoUniver(runtime, initialSnapshot, 'new-workbook', 'Untitled')
     univerRef.current = runtime
+    // The render engine measures the canvas once while it boots, so a workbook
+    // opened before the window layout settles (or a later maximize/restore)
+    // would keep the stale size: nudge it on load, on resize and on container
+    // size changes. See grid-auto-resize.ts.
+    const disposeGridAutoResize = installGridAutoResize(
+      runtime,
+      document.getElementById('univer-container'),
+    )
     // The hidden spare can have a canvas/editor before Univer finishes booting.
     // Expose its lifecycle readiness only to explicitly enabled e2e drivers.
     if ((window as unknown as Record<string, unknown>).__genofficeDebugHooks === true) {
@@ -2108,6 +2117,7 @@ export function App({
         void window.desktopApi.closeWorkbook(lazyState.file.sessionId)
       }
       runtime.univer.dispose()
+      disposeGridAutoResize()
       univerRef.current = null
     }
   }, [])
