@@ -905,10 +905,21 @@ export async function savePdfToPath(
   targetPath: string,
   request: SavePdfRequest,
 ): Promise<SavePdfSkips> {
-  const { bytes, ...skips } = await applySaveRequest(
-    new Uint8Array(await readFile(sourcePath)),
-    request,
-  )
+  return savePdfBytesToPath(new Uint8Array(await readFile(sourcePath)), targetPath, request)
+}
+
+/**
+ * Same as {@link savePdfToPath} but applies the request to an in-memory source
+ * document. Backs the first save of a pathless (untitled) PDF: nothing has hit
+ * disk yet, so the blank in-memory bytes are the source and the dialog-picked
+ * target is written.
+ */
+export async function savePdfBytesToPath(
+  sourceBytes: Uint8Array,
+  targetPath: string,
+  request: SavePdfRequest,
+): Promise<SavePdfSkips> {
+  const { bytes, ...skips } = await applySaveRequest(sourceBytes, request)
   await verifyContentEdits(bytes, request, skips)
   await writePdfAtomically(targetPath, bytes)
   return skips

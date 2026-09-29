@@ -2,6 +2,7 @@ import type { Lang } from '@genoffice/i18n'
 
 export const PDF_CHANNELS = {
   consumePending: 'pdf:consume-pending',
+  readBlank: 'pdf:read-blank',
   readFile: 'pdf:read-file',
   save: 'pdf:save',
   requestRedactionCopy: 'pdf:request-redaction-copy',
@@ -472,7 +473,14 @@ export interface FormValueInput {
 }
 
 export interface SavePdfRequest {
+  /** Source path. Empty string is accepted for a pathless (untitled) view: the
+      first save asks for a destination via Save As and uses the in-memory blank
+      document as the source. */
   path: string
+  /**
+   * Suggested file name (without directory) for a pathless view's Save As dialog.
+   * Ignored for path-backed saves. */
+  defaultSaveName?: string
   /**
    * Save As destination. When set, `path` is only read (source bytes) and the edited PDF
    * is written to this path instead — the original file must never be mutated.
@@ -530,6 +538,11 @@ export interface PdfAutoRenameResult {
 export type SavePdfResult =
   | {
       ok: true
+      /** True when the untitled Save As dialog was dismissed; nothing was written */
+      canceled?: boolean
+      /** Path the document was written to; present when a pathless (untitled) view
+          was saved through the Save As dialog and now owns `path`. */
+      path?: string
       skippedTextEdits?: TextEditFailure[]
       skippedTextInserts?: TextInsertFailure[]
       skippedImageEdits?: ImageEditFailure[]
@@ -670,6 +683,8 @@ export type ExportImagesResult =
 export interface PdfApi {
   /** Take the pdf path pending for this view (queued at tab creation); null if none */
   consumePending(): Promise<string | null>
+  /** Bytes of the in-memory blank A4 document for a pathless (untitled) view; null if this view has a file */
+  readBlank(): Promise<ArrayBuffer | null>
   /** Read pdf bytes. Only paths granted to this view are allowed */
   readFile(path: string): Promise<ArrayBuffer>
   /** Write markups/form values/page ops back to the original file (pdf-lib, content streams untouched); path grants same as readFile. With targetPath set (Save As), the original is only read and the result goes to targetPath */

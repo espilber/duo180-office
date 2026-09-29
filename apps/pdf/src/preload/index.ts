@@ -6,6 +6,7 @@ import type { PdfApi, UiTheme } from '../shared/ipc'
 
 const api: PdfApi = {
   consumePending: () => ipcRenderer.invoke(PDF_CHANNELS.consumePending),
+  readBlank: () => ipcRenderer.invoke(PDF_CHANNELS.readBlank),
   readFile: (path) => ipcRenderer.invoke(PDF_CHANNELS.readFile, path),
   save: (request) => ipcRenderer.invoke(PDF_CHANNELS.save, request),
   requestRedactionCopy: (path) => ipcRenderer.invoke(PDF_CHANNELS.requestRedactionCopy, path),

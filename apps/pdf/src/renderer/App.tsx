@@ -918,7 +918,8 @@ export default function App() {
       saved?: SavedSnapshot,
       waitForPageNos: number[] = [],
     ) => {
-      const data = await window.pdfApi.readFile(path)
+      const data = path ? await window.pdfApi.readFile(path) : await window.pdfApi.readBlank()
+      if (!data) throw new Error('pdf: no document to load')
       const bytes = new Uint8Array(data)
       setFormHasXfa(hasXfaMarker(bytes))
       if (!saved) {
@@ -1229,6 +1230,13 @@ export default function App() {
     void (async () => {
       const path = await window.pdfApi.consumePending()
       if (!path) {
+        // No file: the shell opened an in-memory blank (New PDF). Show the blank
+        // A4 page; nothing has been written to disk.
+        const blank = await window.pdfApi.readBlank().catch(() => null)
+        if (blank) {
+          await openPath('')
+          return
+        }
         setStatus('empty')
         return
       }
@@ -3336,9 +3344,22 @@ export default function App() {
       edits !== textEdits ||
       noteFlush.drawings !== drawings ||
       noteFlush.noteEdits !== noteEdits
-    if (!anythingToSave || !filePath) return Promise.resolve(!anythingToSave)
+    const untitled = filePath === ''
+    // A pathless (untitled) document always saves through the Save As dialog — even
+    // with no pending edits — because it has no name yet. A path-backed one with
+    // nothing to save is a no-op.
+    if (!untitled && (!anythingToSave || !filePath)) return Promise.resolve(!anythingToSave)
     // An explicit save opts this file into autosave
     if (!autosave) savedOnceRef.current = true
+    // Content-derived naming (docs/sheets analog): the topmost text this save inserts
+    // becomes the suggested file name in the untitled Save As dialog. It is only a
+    // suggestion — the user picks the final name, and nothing is renamed behind them.
+    const nameCandidate = [...textInserts]
+      .sort(
+        (a, b) => a.input.pageIndex - b.input.pageIndex || b.input.origin[1] - a.input.origin[1],
+      )[0]
+      ?.input.text.split('\n')[0]
+      ?.trim()
     // What this save writes — the post-save reload subtracts exactly this, keeping
     // any edits the user makes while the write is in flight
     const snapshot: SavedSnapshot = {
@@ -3360,7 +3381,16 @@ export default function App() {
     inFlightPageMapRef.current = snapshot.pageMap
     const run = (async (): Promise<boolean> => {
       setSaveState('saving')
-      const result = await window.pdfApi.save({ path: filePath, ...editsPayload(edits, noteFlush) })
+      const result = await window.pdfApi.save(
+        untitled
+          ? { path: '', defaultSaveName: nameCandidate, ...editsPayload(edits, noteFlush) }
+          : { path: filePath, ...editsPayload(edits, noteFlush) },
+      )
+      if (result.ok && result.canceled) {
+        // Save As was dismissed: the blank document is untouched, nothing was written
+        setSaveState('idle')
+        return false
+      }
       if (!result.ok) {
         opFailed(result.error)
         return false
@@ -3374,6 +3404,9 @@ export default function App() {
       if (result.skippedImageEdits && result.skippedImageEdits.length > 0) {
         noticeSkippedImages(result.skippedImageEdits)
       }
+      // A pathless document just landed on disk under the picked name: adopt that path
+      const savedPath = untitled ? (result.path ?? '') : filePath
+      if (untitled && savedPath) setFilePath(savedPath)
       // Reload: changes are in the file now, canvas renders directly, saved pending ops are cleared
       try {
         const el = scrollRef.current
@@ -3384,24 +3417,18 @@ export default function App() {
         const renderedPageNos = canRetainPreview
           ? [...visibleRows].flatMap((rowIdx) => (rows[rowIdx] ?? []).map((origIdx) => origIdx + 1))
           : []
-        await loadDoc(filePath, doc, snapshot, renderedPageNos)
+        await loadDoc(savedPath, doc, snapshot, renderedPageNos)
         requestAnimationFrame(() => {
           if (scrollRef.current) scrollRef.current.scrollTop = scrollTop
         })
       } catch {
         /* Save already succeeded; a reload failure doesn't block (takes effect on next open) */
       }
-      // Content-derived naming (docs/sheets analog): a shell-created blank still
-      // carrying its untitled name takes its file name from the topmost text this
-      // save inserted; the main process no-ops for every other file, so
-      // user-chosen names are never touched.
-      const nameCandidate = [...textInserts]
-        .sort(
-          (a, b) => a.input.pageIndex - b.input.pageIndex || b.input.origin[1] - a.input.origin[1],
-        )[0]
-        ?.input.text.split('\n')[0]
-        ?.trim()
-      if (nameCandidate) {
+      // Path-backed content-derived naming (docs/sheets analog): a shell-created blank
+      // still carrying its untitled name takes its file name from the inserted text.
+      // A pathless document already got a user-chosen name in the Save As dialog, so
+      // it is skipped; the main process no-ops for every unmarked file anyway.
+      if (!untitled && nameCandidate) {
         try {
           const renamed = await window.pdfApi.autoRename(filePath, nameCandidate)
           if (renamed.renamed && renamed.path) setFilePath(renamed.path)

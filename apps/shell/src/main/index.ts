@@ -96,9 +96,7 @@ import {
   setDocsFileOpenedHook,
   setSessionPathResolver,
   defaultSaveDir,
-  uniquePathIn,
 } from '../../../docs/src/main/docs-main'
-import { blankPdfBuffer } from '../../../pdf/src/main/blank-pdf'
 import {
   configureSheetsRuntime,
   exportSheetsPdfHeadless,
@@ -137,15 +135,16 @@ import {
 import {
   configurePdfRuntime,
   flushPdfSave,
-  markPdfUntitledPath,
   pdfFileRenamed,
   pdfIsDirty,
   requestPdfClose,
   requestPdfSaveAs,
   sendPdfPrintRequest,
+  setPdfFileSavedHook,
   setPdfRenamedHook,
   setPdfRedactionSavedHook,
   setPdfSaveAsInFlight,
+  setPdfSaveDirResolver,
 } from '../../../pdf/src/main/pdf-main'
 import { PDF_CHANNELS } from '../../../pdf/src/shared/ipc'
 import { convertPdfFileToDocxLocalWithPrompt, PdfLoadError } from './pdf2docx-local'
@@ -2382,11 +2381,6 @@ function takePendingDir(kind: string): { dir: string; setAt: number } | null {
   return existsSync(pending.dir) ? pending : null
 }
 
-/** where a shell-created blank file (sheet, pdf) lands: the remembered folder, else the root */
-function newFileDir(kind: string): string {
-  return takePendingDir(kind)?.dir ?? defaultSaveDir()
-}
-
 /** hand the remembered folder to the tab that was just opened for it */
 function bindPendingDir(kind: string, tabId: string | undefined): void {
   const pending = takePendingDir(kind)
@@ -2616,7 +2610,9 @@ function createShellWindow(): void {
             ? tm('untitledMarkdown')
             : kind === 'html'
               ? tm('untitledHtml')
-              : tm('untitledSheet'),
+              : kind === 'pdf'
+                ? tm('untitledPdf')
+                : tm('untitledSheet'),
   )
   tabManager = manager
 
@@ -2636,6 +2632,7 @@ function createShellWindow(): void {
   setDocsSaveDirResolver((wc) => peekPendingDir(wc.id))
   setSheetsSaveDirResolver((wc) => peekPendingDir(wc.id))
   setSlidesSaveDirResolver((wc) => peekPendingDir(wc.id))
+  setPdfSaveDirResolver((wc) => peekPendingDir(wc.id))
   setSlidesShellWindow(win)
   setSlidesShowBleed((wc, on) => manager.setContentBleed(wc, on))
   setHtmlPresentHooks({
@@ -2725,6 +2722,14 @@ function createShellWindow(): void {
     manager.setTabFileFor(wc.id, path)
     recordRecentFile(path)
     applyPendingDir(wc.id, path)
+  })
+  // A pathless PDF's first Save As wrote the document to `path`; sync the tab
+  // title/path, recents and (if it landed in the root) the pending folder.
+  setPdfFileSavedHook((wc, path) => {
+    const landed = applyPendingDir(wc.id, path)
+    manager.setTabFileFor(wc.id, landed)
+    recordRecentFile(landed)
+    return landed
   })
   // pdf content-derived auto-rename: the file moved on disk, follow it everywhere
   setPdfRenamedHook((wc, oldPath, newPath) => {
@@ -3024,17 +3029,14 @@ function newHtmlTab(): void {
 }
 
 /**
- * "New PDF" creates a blank single-page .pdf in the default folder up front and
- * opens it as a regular file tab — the PDF module has no in-memory blank mode
- * (openPdfTab requires a path), same pattern as the blank workbook above.
+ * "New PDF" opens an in-memory blank tab exactly like Docs/Sheets/Slides:
+ * nothing touches the disk until the user saves. `bindPendingDir` only suggests
+ * the folder for the first save, which asks for a path and name instead of
+ * inheriting a pre-created "Untitled N.pdf".
  */
-async function newPdfTab(): Promise<void> {
+function newPdfTab(): void {
   try {
-    const filePath = uniquePathIn(newFileDir('pdf'), `${tm('untitledPdf')}.pdf`)
-    writeFileSync(filePath, await blankPdfBuffer())
-    // Opt the file into content-derived auto-naming on its first save
-    markPdfUntitledPath(filePath)
-    routeDocumentPath(filePath)
+    bindPendingDir('pdf', tabManager?.openPdfTab())
   } catch (err) {
     surfaceNewTabError(err)
   }
@@ -4063,7 +4065,15 @@ let savingPdfAs = false
 
 async function savePdfAs(): Promise<void> {
   const tab = tabManager?.activePdfTab()
-  if (!tab?.filePath || !shellWindow || savingPdfAs) return
+  if (!tab || savingPdfAs) return
+  // Untitled (never saved): the renderer owns the Save As dialog so it can anchor
+  // on the folder the tab was created in (pdf's pending-dir resolver) and write
+  // the in-memory blank document. Nothing exists on disk yet.
+  if (!tab.filePath) {
+    void flushPdfSave(tab.webContents)
+    return
+  }
+  if (!shellWindow) return
   savingPdfAs = true
   // Pause renderer autosave for the whole flow: the dialog blurs the window, and a
   // blur-triggered autosave would write the pending edits into the original file

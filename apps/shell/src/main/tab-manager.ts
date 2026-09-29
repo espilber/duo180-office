@@ -321,13 +321,19 @@ export class TabManager {
     return id
   }
 
-  openPdfTab(openPath: string): string {
+  openPdfTab(openPath?: string): string {
     const view = createPdfView(openPath)
     const id = `t${this.nextId++}`
     this.shellWindow.contentView.addChildView(view)
     view.setVisible(false)
     this.trackHtmlFullScreen(id, view)
-    this.tabs.push({ id, kind: 'pdf', view, title: basename(openPath), filePath: openPath })
+    this.tabs.push({
+      id,
+      kind: 'pdf',
+      view,
+      title: openPath ? basename(openPath) : this.untitled('pdf', 'PDF'),
+      filePath: openPath,
+    })
     this.activateTab(id)
     return id
   }

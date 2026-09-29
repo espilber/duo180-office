@@ -23,6 +23,7 @@ import {
   printHtmlToPdf,
   safeExternalUrl,
   showOpenDialogWithMemory,
+  showSaveDialogWithMemory,
   installRendererProtocol,
   registerRendererScheme,
   rendererUrl,
@@ -73,11 +74,13 @@ import {
   mergePdfBytes,
   readStaticFormFills,
   replacePagesBytes,
+  savePdfBytesToPath,
   savePdfToPath,
   setPageSizeBytes,
   splitPagesBytes,
   splitPdfBytes,
 } from './save-pdf'
+import { blankPdfBuffer } from './blank-pdf'
 import {
   addSignature,
   isSignatureData,
@@ -596,6 +599,11 @@ function openGeneratedPdf(path: string): void {
  * (View > Reload) remounts the renderer and consumes again — a one-shot entry
  * would strand the tab on "No file to open". */
 const openPathByWc = new Map<number, string>()
+/** Views opened with no file (shell "New PDF"): their document lives only in memory
+    until the first Save As writes it. Keyed by webContents id. */
+const untitledByWc = new Set<number>()
+/** Cached blank A4 bytes for each pathless view (generated once, delivered read-only). */
+const blankBytesByWc = new Map<number, Uint8Array>()
 /** File paths granted to each view — readFile only allows these */
 const allowedByWc = new Map<number, Set<string>>()
 /** Unsaved-changes flags mirrored from the renderer; drives the save prompt before closing a tab/window */
@@ -611,6 +619,65 @@ let pdfRedactionSavedHook: ((wc: WebContents, path: string) => void) | null = nu
 
 export function setPdfRedactionSavedHook(hook: (wc: WebContents, path: string) => void): void {
   pdfRedactionSavedHook = hook
+}
+
+/**
+ * A pathless view's first save wrote the document to `path` (Save As pick).
+ * The shell uses the returned path (possibly moved into the pending folder) to
+ * sync the tab title/path and recents.
+ */
+let pdfFileSavedHook: ((wc: WebContents, path: string) => string | void) | null = null
+
+export function setPdfFileSavedHook(
+  hook: ((wc: WebContents, path: string) => string | void) | null,
+): void {
+  pdfFileSavedHook = hook
+}
+
+/**
+ * Folder a pathless view's first Save As should start in: the shell injects the
+ * folder the user clicked "New" in (per webContents), matching docs/slides.
+ */
+let pdfSaveDirResolver: ((wc: WebContents) => string | null) | null = null
+
+export function setPdfSaveDirResolver(fn: ((wc: WebContents) => string | null) | null): void {
+  pdfSaveDirResolver = fn
+}
+
+/** Blank A4 bytes for a pathless view, generated once and cached for its lifetime. */
+async function blankBytesFor(wcId: number): Promise<Uint8Array> {
+  const existing = blankBytesByWc.get(wcId)
+  if (existing) return existing
+  const bytes = new Uint8Array(await blankPdfBuffer())
+  blankBytesByWc.set(wcId, bytes)
+  return bytes
+}
+
+/**
+ * Save As destination for a pathless (untitled) view. The dialog is anchored in
+ * the shell-injected pending folder, so the first Save files the document where
+ * the user created the tab. Null = dismissed.
+ */
+async function promptUntitledSavePath(
+  event: {
+    sender: WebContents
+  },
+  suggestedName?: unknown,
+): Promise<string | null> {
+  const parent = BrowserWindow.fromWebContents(event.sender) ?? undefined
+  const dir = pdfSaveDirResolver?.(event.sender) ?? configuredDefaultSaveDir(app)
+  const base =
+    sanitizeAutoRenameBase(typeof suggestedName === 'string' ? suggestedName : '') ?? 'Untitled'
+  const picked = await showSaveDialogWithMemory(
+    dialog,
+    parent,
+    {
+      defaultPath: join(dir, `${base}.pdf`),
+      filters: [{ name: tm('filterPdf'), extensions: ['pdf'] }],
+    },
+    dir,
+  )
+  return picked.canceled || !picked.filePath ? null : picked.filePath
 }
 
 export function pdfIsDirty(webContentsId: number): boolean {
@@ -823,7 +890,10 @@ function requestRendererSave(contents: WebContents): Promise<boolean> {
 
 /** Menu Save: ask the renderer to write pending edits to disk; clean views resolve true immediately */
 export function flushPdfSave(contents: WebContents): Promise<boolean> {
-  if (contents.isDestroyed() || !dirtyByWc.has(contents.id)) return Promise.resolve(true)
+  if (contents.isDestroyed()) return Promise.resolve(true)
+  // A pathless (untitled) view always needs the renderer's Save As flow, even when
+  // it has no pending edits — the document has no name yet.
+  if (!dirtyByWc.has(contents.id) && !untitledByWc.has(contents.id)) return Promise.resolve(true)
   return requestRendererSave(contents)
 }
 
@@ -890,6 +960,21 @@ function registerPdfIpc(): void {
 
   ipcMain.handle(PDF_CHANNELS.consumePending, (e) => openPathByWc.get(e.sender.id) ?? null)
 
+  // Pathless (shell "New PDF") views get the blank A4 document as bytes; nothing
+  // is written to disk. Null means this view has a real file.
+  ipcMain.handle(PDF_CHANNELS.readBlank, async (e): Promise<ArrayBuffer | null> => {
+    if (!untitledByWc.has(e.sender.id)) return null
+    try {
+      const bytes = await blankBytesFor(e.sender.id)
+      return bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      ) as ArrayBuffer
+    } catch {
+      return null
+    }
+  })
+
   ipcMain.handle(PDF_CHANNELS.getUsername, () => {
     try {
       return userInfo().username
@@ -926,6 +1011,47 @@ function registerPdfIpc(): void {
 
   ipcMain.handle(PDF_CHANNELS.save, async (e, request: SavePdfRequest): Promise<SavePdfResult> => {
     const path = request?.path
+    // Pathless (untitled) view: the first save asks for a destination and writes the
+    // in-memory blank document there. Nothing exists on disk before this point.
+    if (path === '' && untitledByWc.has(e.sender.id)) {
+      let sourceBytes: Uint8Array
+      try {
+        sourceBytes = await blankBytesFor(e.sender.id)
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      }
+      const target = await promptUntitledSavePath(e, request?.defaultSaveName)
+      if (!target) return { ok: true, canceled: true }
+      try {
+        const { skippedTextEdits, skippedTextInserts, skippedImageEdits } =
+          await savePdfBytesToPath(sourceBytes, target, request)
+        // The document now owns `target`: grant it and drop the untitled state.
+        allowedByWc.set(e.sender.id, new Set([target]))
+        openPathByWc.set(e.sender.id, target)
+        untitledByWc.delete(e.sender.id)
+        blankBytesByWc.delete(e.sender.id)
+        let committed = target
+        try {
+          const hooked = pdfFileSavedHook?.(e.sender, target)
+          if (typeof hooked === 'string' && hooked) committed = hooked
+        } catch (err) {
+          console.warn('[pdf] file-saved hook failed:', err)
+        }
+        // The hook may have moved the file into the pending folder; grant the
+        // committed path (not the pre-move one) so the renderer can reload it.
+        allowedByWc.set(e.sender.id, new Set([committed]))
+        openPathByWc.set(e.sender.id, committed)
+        return {
+          ok: true,
+          path: committed,
+          ...(skippedTextEdits.length > 0 ? { skippedTextEdits } : {}),
+          ...(skippedTextInserts.length > 0 ? { skippedTextInserts } : {}),
+          ...(skippedImageEdits.length > 0 ? { skippedImageEdits } : {}),
+        }
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      }
+    }
     if (typeof path !== 'string' || !allowedByWc.get(e.sender.id)?.has(path)) {
       return { ok: false, error: 'pdf: path not granted to this view' }
     }
@@ -1567,6 +1693,8 @@ function grantAndTrack(wc: WebContents, openPath?: string | null): void {
   })
   wc.once('destroyed', () => {
     openPathByWc.delete(wcId)
+    untitledByWc.delete(wcId)
+    blankBytesByWc.delete(wcId)
     redactionPathByWc.delete(wcId)
     redactionFlows.delete(wcId)
     allowedByWc.delete(wcId)
@@ -1596,6 +1724,8 @@ export function createPdfView(openPath?: string | null): WebContentsView {
     },
   })
   grantAndTrack(view.webContents, openPath)
+  // No path = the shell's in-memory blank document; the renderer loads blank bytes.
+  if (!openPath) untitledByWc.add(view.webContents.id)
   void view.webContents.loadURL(rendererUrl(runtime.rendererUrl, 'pdf'))
   return view
 }
