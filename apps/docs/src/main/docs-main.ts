@@ -2497,10 +2497,30 @@ async function openDialog(event: IpcMainInvokeEvent, options: OpenDialogOptions)
   return showOpenDialogWithMemory(dialog, dialogParent(event), options)
 }
 
-async function saveDialog(event: IpcMainInvokeEvent, options: SaveDialogOptions) {
+/**
+ * Folder a fresh tab's first Save As should start in: the shell injects the
+ * folder the user clicked "New" in (per webContents), so the untitled
+ * document is filed where they expect. Null/standalone falls back to the
+ * configurable default save folder.
+ */
+let saveDirResolver: ((wc: WebContents) => string | null) | null = null
+export function setDocsSaveDirResolver(fn: ((wc: WebContents) => string | null) | null): void {
+  saveDirResolver = fn
+}
+
+async function saveDialog(
+  event: IpcMainInvokeEvent,
+  options: SaveDialogOptions,
+  fallbackDir?: string,
+) {
   // before any pick is remembered, bare-name suggestions anchor in the
   // configurable default save folder instead of Electron's Downloads pin
-  return showSaveDialogWithMemory(dialog, dialogParent(event), options, defaultSaveDir())
+  return showSaveDialogWithMemory(
+    dialog,
+    dialogParent(event),
+    options,
+    fallbackDir ?? defaultSaveDir(),
+  )
 }
 
 /** default folder where new files land on their first (silent) save; shared with the other editors via shell. User-configurable (app-settings.json), falls back to <Documents>/GenOffice. */
@@ -3493,14 +3513,27 @@ export function registerDocsIpc(): void {
     async (event, defaultName: string, data: ArrayBuffer, sourcePath?: string | null) => {
       // an orphaned (closed-tab) renderer must not open dialogs or land new files
       if (tornDownWcIds.has(event.sender.id)) return { ok: false }
-      const result = await saveDialog(event, {
-        title: tm('dlgSaveAs'),
-        defaultPath: saveAsSuggestion(
-          typeof sourcePath === 'string' ? sourcePath : null,
-          defaultName,
-        ),
-        filters: [{ name: tm('filterWord'), extensions: ['docx'] }],
-      })
+      // A pathless document anchors in the folder the tab was created in
+      // (shell-injected pending dir); an absolute defaultPath wins over the
+      // dialog's remember-last-folder memory. Otherwise the suggestion follows
+      // the source file (or the default folder for a bare name).
+      const pendingDir =
+        typeof sourcePath === 'string' && sourcePath ? null : saveDirResolver?.(event.sender)
+      const result = await saveDialog(
+        event,
+        {
+          title: tm('dlgSaveAs'),
+          defaultPath:
+            pendingDir && pendingDir !== ''
+              ? join(pendingDir, defaultName)
+              : saveAsSuggestion(
+                  typeof sourcePath === 'string' ? sourcePath : null,
+                  defaultName,
+                ),
+          filters: [{ name: tm('filterWord'), extensions: ['docx'] }],
+        },
+        pendingDir ?? undefined,
+      )
       if (result.canceled || !result.filePath) return { ok: false }
       // the tab may have been closed while the dialog was open; checked before the
       // write because Save As may overwrite an existing file (no safe rollback)

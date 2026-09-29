@@ -924,11 +924,15 @@ async function saveOnce(
       // A never-saved document still called "Untitled" gets a name derived from its first heading
       const autoName =
         !doc.filePath && doc.fileName === t('appUntitledDocx') ? deriveAutoFileName(editor) : null
-      // Save As keeps the dialog; a new document's first save lands silently in the default
-      // folder. The source path identifies the desired password state to snapshot.
-      const result = saveAs
-        ? await window.desktop.saveDocxAs(autoName ?? doc.fileName, buffer, doc.filePath)
-        : await window.desktop.saveDocxNew(newDocName ?? autoName ?? doc.fileName, buffer)
+      // Save As always asks for a path; so does a pathless document's first
+      // user-initiated save (nothing is written to disk before the user saves).
+      // Only the silent crash-recovery/autosave pass (auto) still save-news into
+      // the default folder without a dialog. The source path identifies the
+      // desired password state to snapshot.
+      const result =
+        saveAs || !auto
+          ? await window.desktop.saveDocxAs(autoName ?? doc.fileName, buffer, doc.filePath)
+          : await window.desktop.saveDocxNew(newDocName ?? autoName ?? doc.fileName, buffer)
       if (!result.ok) {
         if (result.error) {
           ctx.setStatus(t('appSaveFailed', { error: result.error }))

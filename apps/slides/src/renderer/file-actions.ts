@@ -86,10 +86,40 @@ async function runSerialized<T>(pass: () => Promise<T>): Promise<T> {
   return current
 }
 
+/** One Save As pass over a resolved context; runs inside the save queue. */
+async function saveAsPass(ctx: ActionCtx, quiet: boolean): Promise<boolean> {
+  await flushActiveEdit(ctx)
+  await ctx.flushNotes()
+  const name = ctx.path?.split('/').pop() ?? 'presentation.pptx'
+  const r = await window.slidesApi.saveAs(name)
+  if (r.ok) {
+    if (r.slides) adoptSavedSlides(ctx, r.slides)
+    ctx.setPath(r.path ?? ctx.path)
+    ctx.setDirty(false)
+    const saved = t('appStatusSavedAs')
+    ctx.setStatus(saved)
+    if (!quiet) showToast(saved)
+    return true
+  }
+  if (r.error) {
+    // a canceled dialog returns ok:false without error — only real write
+    // failures surface, matching the docs/sheets save-as feedback
+    const failed = t('appStatusSaveFailed', { error: r.error })
+    ctx.setStatus(failed)
+    if (!quiet) showToast(failed, 'error')
+  }
+  return false
+}
+
 export async function save(getCtx: () => ActionCtx, quiet = false): Promise<boolean> {
   return runSerialized(async () => {
     // resolved only now: a queued pass must remap selection against the tree the prior save adopted
     const ctx = getCtx()
+    // Untitled deck: nothing is written before the user saves, so the first
+    // Save asks for a path (PowerPoint's Save As behavior) instead of silently
+    // writing an untitled draft. Routing to the same pass avoids nesting the
+    // serial queue.
+    if (!ctx.path) return saveAsPass(ctx, quiet)
     await flushActiveEdit(ctx)
     await ctx.flushNotes()
     const r = await window.slidesApi.save()
@@ -111,30 +141,10 @@ export async function save(getCtx: () => ActionCtx, quiet = false): Promise<bool
   })
 }
 
-export async function saveAs(getCtx: () => ActionCtx): Promise<void> {
+export async function saveAs(getCtx: () => ActionCtx, quiet = false): Promise<boolean> {
   // Same queue as save(): Save + Save As (or double Save As) write through
   // the same main-process pipe and would interleave without it.
-  await runSerialized(async () => {
-    const ctx = getCtx()
-    await flushActiveEdit(ctx)
-    await ctx.flushNotes()
-    const name = ctx.path?.split('/').pop() ?? 'presentation.pptx'
-    const r = await window.slidesApi.saveAs(name)
-    if (r.ok) {
-      if (r.slides) adoptSavedSlides(ctx, r.slides)
-      ctx.setPath(r.path ?? ctx.path)
-      ctx.setDirty(false)
-      const saved = t('appStatusSavedAs')
-      ctx.setStatus(saved)
-      showToast(saved)
-    } else if (r.error) {
-      // a canceled dialog returns ok:false without error — only real write
-      // failures surface, matching the docs/sheets save-as feedback
-      const failed = t('appStatusSaveFailed', { error: r.error })
-      ctx.setStatus(failed)
-      showToast(failed, 'error')
-    }
-  })
+  return runSerialized(async () => saveAsPass(getCtx(), quiet))
 }
 
 /** Export base name: file name without the .pptx extension */

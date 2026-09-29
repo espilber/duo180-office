@@ -68,6 +68,7 @@ import {
   readArchiveEntryText,
   saveWorkbookViaSidecar,
 } from '@genoffice/xlsx-gateway/gateway/xlsx-package-io'
+import { blankXlsxBuffer } from '@genoffice/xlsx-gateway/gateway/csv-import'
 import { parsePivotDefinition } from '@genoffice/xlsx-gateway/gateway/xlsx-pivot'
 import type { SheetEditPlan } from '@genoffice/xlsx-gateway/gateway/xlsx-sheets'
 import type {
@@ -1539,7 +1540,7 @@ async function saveFileDialog(event: IpcMainInvokeEvent, options: SaveDialogOpti
     dialog,
     dialogParent(event),
     options,
-    configuredDefaultSaveDir(app),
+    sheetsSaveDirResolver?.(event.sender) ?? configuredDefaultSaveDir(app),
   )
 }
 
@@ -1794,10 +1795,25 @@ export function hasActiveQueuedWorkbook(): boolean {
 
 /** set by shell for home:new-sheet: renderer opens blank workbook instead of demo */
 let pendingNewBlank = false
+/** localized default file name the shell suggests for a new blank workbook */
+let pendingNewBlankName: string | undefined
 
 /** signal the next sheets renderer to open a new blank workbook (shell mode only) */
-export function setSheetsNewBlank(): void {
+export function setSheetsNewBlank(defaultName?: string): void {
   pendingNewBlank = true
+  pendingNewBlankName = defaultName
+}
+
+/**
+ * Folder a fresh tab's first Save As should start in: the shell injects the
+ * folder the user clicked "New" in (per webContents). Null/standalone falls
+ * back to the configurable default save folder.
+ */
+let sheetsSaveDirResolver: ((wc: WebContents) => string | null) | null = null
+export function setSheetsSaveDirResolver(
+  fn: ((wc: WebContents) => string | null) | null,
+): void {
+  sheetsSaveDirResolver = fn
 }
 
 // capturePage forces a renderer frame even when the window is occluded or on
@@ -2279,6 +2295,35 @@ export function registerSheetsIpc(): void {
       return true
     }
     return false
+  })
+
+  /**
+   * "New spreadsheet" (shell mode): open a blank workbook session from an
+   * in-memory template so the renderer has a real, journaled session that has
+   * never touched a user-visible path. `suggestSaveAs` routes the first Save
+   * through Save As, anchored in the tab's pending folder.
+   */
+  ipcMain.handle(IPC_CHANNELS.newBlankWorkbook, async (event) => {
+    if (!pendingNewBlank) return null
+    pendingNewBlank = false
+    const defaultName = pendingNewBlankName ?? 'Untitled.xlsx'
+    pendingNewBlankName = undefined
+    const entry = sessionFor(event)
+    const dir = join(app.getPath('temp'), 'genoffice-untitled', randomUUID())
+    await mkdir(dir, { recursive: true })
+    const blankPath = join(dir, defaultName)
+    try {
+      await writeFile(blankPath, await blankXlsxBuffer())
+      const dirHint = sheetsSaveDirResolver?.(event.sender) ?? configuredDefaultSaveDir(app)
+      if (!existsSync(dirHint)) mkdirSync(dirHint, { recursive: true })
+      return await openWorkbookSession(entry.client, blankPath, entry.sessions, {
+        suggestSaveAs: join(dirHint, defaultName),
+        importTempDir: dir,
+      })
+    } catch (error) {
+      await rm(dir, { recursive: true, force: true }).catch(() => undefined)
+      throw error
+    }
   })
 
   /**

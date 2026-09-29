@@ -1072,14 +1072,9 @@ export function Ribbon({
   editing,
   autoSave,
   onAutoSaveChange,
-  onOpen,
   onSave,
   onUndo,
   onRedo,
-  onSaveAs,
-  onExportPdf,
-  onPrint,
-  onExportImages,
   onFormat,
   zoom,
   onZoom,
@@ -1224,7 +1219,6 @@ export function Ribbon({
   const autoContextTab = autoContextTabForElement(contextElementType ?? null)
 
   const [tab, setTab] = useState<MainTab | ContextTab>('home')
-  const [fileOpen, setFileOpen] = useState(false)
   const [colorOpen, setColorOpen] = useState(false)
   const [fontOpen, setFontOpen] = useState(false)
   const [sizeOpen, setSizeOpen] = useState(false)
@@ -1302,7 +1296,6 @@ export function Ribbon({
   // the trigger's own (its toggle decides) and, for nested triggers, the panel
   // anchoring them.
   const closePanels = useCallback((keep: RibbonPanelKey[] = []) => {
-    if (!keep.includes('file')) setFileOpen(false)
     if (!keep.includes('color')) setColorOpen(false)
     if (!keep.includes('font')) setFontOpen(false)
     if (!keep.includes('size')) setSizeOpen(false)
@@ -1684,77 +1677,6 @@ export function Ribbon({
         }`}
         onDoubleClick={collapse.onTabsDoubleClick}
       >
-        {!IS_MAC && (
-          <div className="file-tab-wrap">
-            <button
-              className={`ribbon-tab ribbon-tab-file ${fileOpen ? 'open' : ''}`}
-              onMouseDown={(e) => {
-                e.stopPropagation()
-                closeSiblingPanels(e, closePanels, 'file')
-              }}
-              onClick={() => setFileOpen((v) => !v)}
-            >
-              {t('ribbonTabFile')}
-            </button>
-            {fileOpen && (
-              <div className="file-menu">
-                <button
-                  onClick={() => {
-                    setFileOpen(false)
-                    onOpen()
-                  }}
-                >
-                  {t('ribbonFileOpen')} <span className="file-menu-key">Ctrl+O</span>
-                </button>
-                <button
-                  disabled={!hasDoc}
-                  onClick={() => {
-                    setFileOpen(false)
-                    onSave()
-                  }}
-                >
-                  {t('ribbonFileSave')} <span className="file-menu-key">Ctrl+S</span>
-                </button>
-                <button
-                  disabled={!hasDoc}
-                  onClick={() => {
-                    setFileOpen(false)
-                    onSaveAs()
-                  }}
-                >
-                  {t('ribbonFileSaveAs')} <span className="file-menu-key">Ctrl+Shift+S</span>
-                </button>
-                <button
-                  disabled={!hasDoc}
-                  onClick={() => {
-                    setFileOpen(false)
-                    onExportPdf()
-                  }}
-                >
-                  {t('ribbonFileExportPdf')}
-                </button>
-                <button
-                  disabled={!hasDoc}
-                  onClick={() => {
-                    setFileOpen(false)
-                    onPrint()
-                  }}
-                >
-                  {t('ribbonFilePrint')} <span className="file-menu-key">Ctrl+P</span>
-                </button>
-                <button
-                  disabled={!hasDoc}
-                  onClick={() => {
-                    setFileOpen(false)
-                    onExportImages()
-                  }}
-                >
-                  {t('ribbonFileExportImages')}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
         <button
           className="qa-btn"
           data-tip={t('ribbonSaveTip')}
@@ -1817,7 +1739,6 @@ export function Ribbon({
             onClick={() => {
               collapse.onTabPress(tab === tb)
               setTab(tb)
-              setFileOpen(false)
             }}
           >
             {t(TAB_LABEL[tb])}

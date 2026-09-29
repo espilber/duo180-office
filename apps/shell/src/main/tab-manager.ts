@@ -272,8 +272,11 @@ export class TabManager {
     return id
   }
 
-  openSheetsTab(openPath?: string, options?: { newBlank?: boolean }): string {
-    if (options?.newBlank) setSheetsNewBlank()
+  openSheetsTab(
+    openPath?: string,
+    options?: { newBlank?: boolean; untitledName?: string },
+  ): string {
+    if (options?.newBlank) setSheetsNewBlank(options.untitledName)
     const spare = this.takeSpareSheetsView()
     const view =
       spare ?? createSheetsView({ includeAiHandlers: false, openingWorkbook: Boolean(openPath) })

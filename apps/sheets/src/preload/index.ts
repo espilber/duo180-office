@@ -73,6 +73,10 @@ const desktopApi: DesktopApi = {
     const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.selectWorkbook)
     return result === null ? null : parseWorkbookFile(result)
   },
+  async newBlankWorkbook() {
+    const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.newBlankWorkbook)
+    return result === null ? null : parseWorkbookFile(result)
+  },
   async selectWorkbooksForMerge() {
     const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.selectWorkbooksForMerge)
     if (result === null) return null

@@ -692,9 +692,6 @@ function RibbonInner({
   onReplace,
   styles,
   docDefaults,
-  onOpen,
-  onSave,
-  onSaveAs,
   section,
   onSection,
   activeSection,
@@ -1953,46 +1950,6 @@ function RibbonInner({
         className={`ribbon-tabs ${IN_TAB ? '' : IS_MAC ? 'ribbon-tabs-mac' : 'ribbon-tabs-win'}`}
         onDoubleClick={collapse.onTabsDoubleClick}
       >
-        {!IS_MAC && (
-          <div className="file-tab-wrap">
-            <button
-              className={`ribbon-tab ribbon-tab-file ${dropdown === 'file' ? 'open' : ''}`}
-              onClick={() => setDropdown((v) => (v === 'file' ? null : 'file'))}
-            >
-              {t('ribbonTabFile')}
-            </button>
-            {dropdown === 'file' && (
-              <div data-rb-panel="" className="file-menu">
-                <button
-                  onClick={() => {
-                    setDropdown(null)
-                    onOpen()
-                  }}
-                >
-                  {t('ribbonOpen')} <span className="file-menu-key">Ctrl+O</span>
-                </button>
-                <button
-                  disabled={!hasDoc}
-                  onClick={() => {
-                    setDropdown(null)
-                    onSave()
-                  }}
-                >
-                  {t('ribbonSave')} <span className="file-menu-key">Ctrl+S</span>
-                </button>
-                <button
-                  disabled={!hasDoc}
-                  onClick={() => {
-                    setDropdown(null)
-                    onSaveAs()
-                  }}
-                >
-                  {t('ribbonSaveAs')} <span className="file-menu-key">Ctrl+Shift+S</span>
-                </button>
-              </div>
-            )}
-          </div>
-        )}
         {quickActions}
         {TABS.filter((tabName) => tabName !== 'file').map((tabName) => (
           <button

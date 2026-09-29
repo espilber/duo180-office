@@ -40,6 +40,8 @@ export const HEADER_FOOTER_PICTURE_POSITION = /^[LCR][HF](EVEN|FIRST)?$/
 
 export const IPC_CHANNELS = {
   selectWorkbook: 'workbook:select',
+  /** Open an in-memory blank workbook session (first Save asks for a path) */
+  newBlankWorkbook: 'workbook:new-blank',
   /** Multi-file picker + sidecar sessions for merging into the current workbook */
   selectWorkbooksForMerge: 'workbook:select-for-merge',
   /** Open explicit paths (attachments) as merge-source sessions — no dialog */

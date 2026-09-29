@@ -12,7 +12,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function renderRibbon(disabled = false) {
+function renderRibbon(disabled = false, dirty = false) {
   const editor = new Editor({
     extensions: buildExtensions({
       slashController: { onOpen() {}, onUpdate() {}, onKeyDown: () => false, onClose() {} },
@@ -27,7 +27,7 @@ function renderRibbon(disabled = false) {
   const root = createRoot(container)
   const props = {
     disabled,
-    dirty: false,
+    dirty,
     onSave,
     onSaveAs,
     onFind: vi.fn(),
@@ -51,30 +51,34 @@ function renderRibbon(disabled = false) {
   return { container, onSave, onSaveAs }
 }
 
-function saveAsButton(container: HTMLElement): HTMLButtonElement {
-  const button = container.querySelector<HTMLButtonElement>(
-    '.ribbon-tabs button[aria-label="\u53e6\u5b58\u4e3a\u2026"]',
-  )
-  expect(button, 'Save As must be available in the top-left quick-access row').not.toBeNull()
+/** First quick-access button is Save — the row must not carry a Save As entry. */
+function saveButton(container: HTMLElement): HTMLButtonElement {
+  const button = container.querySelector<HTMLButtonElement>('.ribbon-tabs .qa-btn')
+  expect(button, 'Save must be available in the top-left quick-access row').not.toBeNull()
   return button!
 }
 
-describe('Save As quick-access button', () => {
-  it('can save a copy of an unchanged document without triggering normal save', () => {
-    const { container, onSave, onSaveAs } = renderRibbon()
-    const button = saveAsButton(container)
-    expect(button.textContent).toBe('\u53e6\u5b58\u4e3a\u2026')
-    expect(button.disabled).toBe(false)
-    act(() => button.click())
-    expect(onSaveAs).toHaveBeenCalledOnce()
-    expect(onSave).not.toHaveBeenCalled()
+describe('quick-access row', () => {
+  it('shows Save and no Save As button (Save As stays in the native menu)', () => {
+    const { container } = renderRibbon()
+    expect(container.querySelector('.qa-save-as')).toBeNull()
+    expect(saveButton(container)).not.toBeNull()
   })
 
-  it('does not allow Save As while the document is unavailable', () => {
-    const { container, onSaveAs } = renderRibbon(true)
-    const button = saveAsButton(container)
+  it('keeps Save clickable for a dirty document', () => {
+    const { container, onSave, onSaveAs } = renderRibbon(false, true)
+    const button = saveButton(container)
+    expect(button.disabled).toBe(false)
+    act(() => button.click())
+    expect(onSave).toHaveBeenCalledOnce()
+    expect(onSaveAs).not.toHaveBeenCalled()
+  })
+
+  it('does not allow Save while the document is unavailable', () => {
+    const { container, onSave } = renderRibbon(true, true)
+    const button = saveButton(container)
     expect(button.disabled).toBe(true)
     act(() => button.click())
-    expect(onSaveAs).not.toHaveBeenCalled()
+    expect(onSave).not.toHaveBeenCalled()
   })
 })

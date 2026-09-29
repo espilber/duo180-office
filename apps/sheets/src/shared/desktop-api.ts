@@ -2388,6 +2388,12 @@ export interface DesktopApi {
    */
   onChromePressed(handler: () => void): () => void
   selectWorkbook(): Promise<WorkbookFile | null>
+  /**
+   * Shell "New Spreadsheet": open an in-memory blank workbook session (no user
+   * file on disk). The first Save routes through Save As. Null when this tab
+   * was not opened for a new blank workbook (standalone/opened-file tabs).
+   */
+  newBlankWorkbook(): Promise<WorkbookFile | null>
   /** multi-select xlsx picker; each file opens a secondary sidecar session for merge reads */
   selectWorkbooksForMerge(): Promise<WorkbookFile[] | null>
   /** open explicit spreadsheet paths (chat attachments) as merge-source sessions */

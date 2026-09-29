@@ -90,6 +90,7 @@ import {
   projectFilePaths,
   projectFileRenamed,
   setDocsHostWindowHook,
+  setDocsSaveDirResolver,
   setDocsShellWindow,
   setDocsFileSavedHook,
   setDocsFileOpenedHook,
@@ -97,7 +98,6 @@ import {
   defaultSaveDir,
   uniquePathIn,
 } from '../../../docs/src/main/docs-main'
-import { blankXlsxBuffer } from '@genoffice/xlsx-gateway/gateway/csv-import'
 import { blankPdfBuffer } from '../../../pdf/src/main/blank-pdf'
 import {
   configureSheetsRuntime,
@@ -107,12 +107,12 @@ import {
   markSheetsShuttingDown,
   requestSheetsClose,
   resolveSheetsSessionPath,
-  markSheetsUntitledPath,
   sendSheetsMenuAction,
   sheetsFileRenamed,
   setSheetsCloseTabHook,
   setSheetsExtraFileMenuItems,
   setSheetsHostWindowHook,
+  setSheetsSaveDirResolver,
   setSheetsShellWindow,
   setSheetsWorkbookOpenedHook,
   startSheetsCaptureServer,
@@ -129,6 +129,7 @@ import {
   setSlidesCloseTabHook,
   setSlidesExtraFileMenuItems,
   setSlidesOpenedHook,
+  setSlidesSaveDirResolver,
   setSlidesShellWindow,
   setSlidesShowBleed,
   slidesFileRenamed,
@@ -2394,6 +2395,21 @@ function bindPendingDir(kind: string, tabId: string | undefined): void {
 }
 
 /**
+ * Non-destructive peek at a tab's pending folder, for the editors' Save As
+ * default. Unlike applyPendingDir (which consumes the binding when a file
+ * lands), this only suggests; the binding expires on its own TTL.
+ */
+function peekPendingDir(wcId: number): string | null {
+  const pending = pendingDirByWc.get(wcId)
+  if (!pending) return null
+  if (Date.now() - pending.setAt > PENDING_DIR_TTL_MS) {
+    pendingDirByWc.delete(wcId)
+    return null
+  }
+  return existsSync(pending.dir) ? pending.dir : null
+}
+
+/**
  * A tab's file first hit disk (silent first save, Save As, or an open): if a
  * folder is bound to that tab and the file is a fresh one in the root, move
  * it there. A pre-existing file opened in the tab never qualifies: its birth
@@ -2615,6 +2631,11 @@ function createShellWindow(): void {
   setSheetsShellWindow(win)
   setDocsHostWindowHook((wc) => detachedWindowForWebContents(wc.id))
   setSheetsHostWindowHook((wc) => detachedWindowForWebContents(wc.id))
+  // Fresh tabs remember the folder they were created in; the editors' first
+  // Save As starts there instead of the generic default save folder.
+  setDocsSaveDirResolver((wc) => peekPendingDir(wc.id))
+  setSheetsSaveDirResolver((wc) => peekPendingDir(wc.id))
+  setSlidesSaveDirResolver((wc) => peekPendingDir(wc.id))
   setSlidesShellWindow(win)
   setSlidesShowBleed((wc, on) => manager.setContentBleed(wc, on))
   setHtmlPresentHooks({
@@ -2940,25 +2961,22 @@ function routeDocumentPath(filePath: string): boolean {
 }
 
 /**
- * "New spreadsheet" creates the backing .xlsx in the default folder up front and
- * opens it as a regular file tab — the blank in-memory demo mode has no save
- * pipeline, so the file must exist before edits. Falls back to the old blank
- * tab if the write fails.
+ * "New spreadsheet" opens an in-memory blank tab exactly like Docs does:
+ * nothing touches the disk until the user saves. `bindPendingDir` only
+ * suggests the folder for the first save, which asks for a path and name
+ * instead of inheriting a pre-created "Untitled N.xlsx".
  */
-async function newSheetTab(): Promise<void> {
+function newSheetTab(): void {
   try {
-    const filePath = uniquePathIn(newFileDir('sheet'), `${tm('untitledSheet')}.xlsx`)
-    writeFileSync(filePath, await blankXlsxBuffer())
-    // eligible for content-derived auto-rename after the first save
-    markSheetsUntitledPath(filePath)
-    routeDocumentPath(filePath)
+    bindPendingDir(
+      'sheet',
+      tabManager?.openSheetsTab(undefined, {
+        newBlank: true,
+        untitledName: `${tm('untitledSheet')}.xlsx`,
+      }),
+    )
   } catch (err) {
-    console.warn('[shell] blank workbook create failed, opening in-memory blank tab:', err)
-    try {
-      tabManager?.openSheetsTab(undefined, { newBlank: true })
-    } catch (fallbackErr) {
-      surfaceNewTabError(fallbackErr)
-    }
+    surfaceNewTabError(err)
   }
 }
 

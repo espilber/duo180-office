@@ -18,11 +18,11 @@ import {
   webContents,
   WebContentsView,
 } from 'electron'
-import type { WebContents } from 'electron'
+import type { IpcMainInvokeEvent, WebContents } from 'electron'
 import { execFile } from 'node:child_process'
 import { readFile, writeFile, rm, stat, mkdir, open } from 'node:fs/promises'
 import { createHash, randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { userInfo } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { exportSlidesPdf } from './pdf-export'
@@ -421,6 +421,18 @@ let elementClipboard: {
 let slidesOpenedHook: ((wc: WebContents, path: string) => void) | null = null
 export function setSlidesOpenedHook(fn: ((wc: WebContents, path: string) => void) | null): void {
   slidesOpenedHook = fn
+}
+
+/**
+ * Folder a fresh tab's first Save As should start in: the shell injects the
+ * folder the user clicked "New" in (per webContents). Null/standalone falls
+ * back to the drafts/default save folder.
+ */
+let slideSaveDirResolver: ((wc: WebContents) => string | null) | null = null
+export function setSlidesSaveDirResolver(
+  fn: ((wc: WebContents) => string | null) | null,
+): void {
+  slideSaveDirResolver = fn
 }
 
 /** Detached editor windows (createSlidesWindow), keyed by webContents id — their titles are owned here */
@@ -863,34 +875,6 @@ function newDraftFilename(): string {
   const date = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
   const time = `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
   return `${tm('untitledDraft')}-${date}-${time}.pptx`
-}
-
-/** Sanitize an AI-provided topic/title into a safe filename base: strip illegal path chars, collapse whitespace, cap length; null if invalid. */
-function sanitizeDraftBaseName(raw: string | undefined): string | null {
-  if (!raw) return null
-  const cleaned = raw
-    // eslint-disable-next-line no-control-regex -- stripping control chars is the point here
-    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    // Strip leading/trailing dots (Windows disallows a trailing dot; a hidden-file prefix is meaningless here)
-    .replace(/^\.+|\.+$/g, '')
-    .trim()
-  if (!cleaned) return null
-  return cleaned.length > 40 ? cleaned.slice(0, 40).trim() : cleaned
-}
-
-/** Pick a draft path from deckName: append -2/-3… if a same-named file exists; fall back to timestamp naming without a valid deckName. */
-function pickDraftPath(draftsDir: string, deckName?: string): string {
-  const base = sanitizeDraftBaseName(deckName)
-  if (base) {
-    let candidate = join(draftsDir, `${base}.pptx`)
-    for (let i = 2; existsSync(candidate) && i < 100; i++) {
-      candidate = join(draftsDir, `${base}-${i}.pptx`)
-    }
-    if (!existsSync(candidate)) return candidate
-  }
-  return join(draftsDir, newDraftFilename())
 }
 
 /** Theme body (minor) Latin font: fallback shown in the ribbon font box when the selection has no text element. */
@@ -3966,17 +3950,54 @@ export function registerSlidesIpc(): void {
     )
   })
 
+  /**
+   * Shared Save As pipeline: pick a path (dialog anchored in the tab's pending
+   * folder when the shell supplied one), write the deck there and re-home the
+   * session. `slides:save` for an untitled deck routes here too, so the first
+   * Save asks for a path instead of silently writing an untitled draft.
+   */
+  const saveDeckAs = async (e: IpcMainInvokeEvent, defaultName?: string) => {
+    const session = sessions.get(e.sender.id)
+    if (!session) return { ok: false, error: 'no file open' }
+    const parent = dialogParent()
+    const name = defaultName ?? `${tm('untitledDeck')}.pptx`
+    // Untitled deck: start in the folder the tab was created in (shell-injected
+    // pending dir); the absolute path also wins over the dialog's last-folder
+    // memory. A saved deck keeps Save As anchored at its own directory.
+    const pendingDir = session.path ? null : slideSaveDirResolver?.(e.sender)
+    const options = {
+      defaultPath: pendingDir ? join(pendingDir, name) : saveAsSuggestion(session.path, name),
+      filters: [{ name: 'PowerPoint', extensions: ['pptx'] }],
+    }
+    const fallbackDir = pendingDir ?? getDraftsDir()
+    const r = await showSaveDialogWithMemory(dialog, parent, options, fallbackDir)
+    if (r.canceled || !r.filePath) return { ok: false }
+    try {
+      const metaRevAtSave = session.metaRev ?? 0
+      await savePptxToFile(session.opened, r.filePath)
+      session.path = r.filePath
+      autosaveBackoff.delete(r.filePath)
+      dropUntitledRecovery(e.sender.id)
+      await pushRecent(r.filePath)
+      syncAttachedPaths(session, r.filePath)
+      commitSaved(session.opened)
+      if ((session.metaRev ?? 0) === metaRevAtSave) session.metaDirty = false
+      return {
+        ok: true,
+        path: r.filePath,
+        slides: buildAllRenderSlides(session.opened, session.fitWidthPx),
+      }
+    } catch (err) {
+      return { ok: false, error: String(err) }
+    }
+  }
+
   ipcMain.handle('slides:save', async (e) => {
     const session = sessions.get(e.sender.id)
     if (!session) return { ok: false, error: 'no file open' }
-    // Untitled (new blank file): the first save lands silently in the drafts folder (Save As keeps its dialog)
-    if (!session.path) {
-      const draftsDir = getDraftsDir()
-      if (!existsSync(draftsDir)) mkdirSync(draftsDir, { recursive: true })
-      session.path = pickDraftPath(draftsDir, tm('untitledDeck'))
-      await pushRecent(session.path)
-      slidesOpenedHook?.(e.sender, session.path)
-    }
+    // Untitled (new blank file): nothing has touched disk yet, so the first
+    // Save opens Save As instead of writing a draft behind the user's back.
+    if (!session.path) return saveDeckAs(e)
     try {
       const metaRevAtSave = session.metaRev ?? 0
       await savePptxToFile(session.opened, session.path)
@@ -3999,35 +4020,7 @@ export function registerSlidesIpc(): void {
     }
   })
 
-  ipcMain.handle('slides:save-as', async (e, defaultName: string) => {
-    const session = sessions.get(e.sender.id)
-    if (!session) return { ok: false, error: 'no file open' }
-    const parent = dialogParent()
-    const options = {
-      defaultPath: saveAsSuggestion(session.path, defaultName),
-      filters: [{ name: 'PowerPoint', extensions: ['pptx'] }],
-    }
-    const r = await showSaveDialogWithMemory(dialog, parent, options, getDraftsDir())
-    if (r.canceled || !r.filePath) return { ok: false }
-    try {
-      const metaRevAtSave = session.metaRev ?? 0
-      await savePptxToFile(session.opened, r.filePath)
-      session.path = r.filePath
-      autosaveBackoff.delete(r.filePath)
-      dropUntitledRecovery(e.sender.id)
-      await pushRecent(r.filePath)
-      syncAttachedPaths(session, r.filePath)
-      commitSaved(session.opened)
-      if ((session.metaRev ?? 0) === metaRevAtSave) session.metaDirty = false
-      return {
-        ok: true,
-        path: r.filePath,
-        slides: buildAllRenderSlides(session.opened, session.fitWidthPx),
-      }
-    } catch (err) {
-      return { ok: false, error: String(err) }
-    }
-  })
+  ipcMain.handle('slides:save-as', (e, defaultName: string) => saveDeckAs(e, defaultName))
 
   // ── Export (PDF / images): the renderer renders hi-res PNGs with offscreen Konva; the main process handles dialogs/writing ──
 

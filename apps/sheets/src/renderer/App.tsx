@@ -923,9 +923,11 @@ export function App({
     // Hold the formula engine's per-chunk recalculation while file data streams
     // in; one merged cycle follows once the chunks stop.
     installFormulaStreamHold(runtime)
-    // The window always starts blank now; still consume the one-shot
-    // new-blank flag so it doesn't leak into the next workbook open.
-    void window.desktopApi?.consumeNewBlankWorkbook?.()
+    // Shell "New Spreadsheet": open a real in-memory blank session (nothing on
+    // disk yet) so edits are journaled and the first Save can route to Save As.
+    void window.desktopApi?.newBlankWorkbook?.().then((blank) => {
+      if (blank) void openLazyWorkbook(blank)
+    })
     // Pull any shell-queued workbook ourselves: the shell's 'open' nudge loop
     // gives up after 30s, and on slow dev cold starts Univer mounts later than
     // that — the tab would strand as a blank in-memory workbook (no save, no
@@ -3239,8 +3241,8 @@ export function App({
         onCommand={handleRibbonCommand}
         onIsCellEditing={isCellEditing}
         zoomPercent={zoomPercent}
-        canSave={pendingEdits > 0}
-        onSave={() => void handleSave('save')}
+        canSave={pendingEdits > 0 || workbookFile?.needsSaveAs === true}
+        onSave={() => void handleSave(workbookFile?.needsSaveAs === true ? 'save-as' : 'save')}
         canSaveAs={workbookFile !== null}
         onSaveAs={() => void handleSave('save-as')}
         onRedo={handleRedo}
