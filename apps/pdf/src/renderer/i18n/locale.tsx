@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { createI18n, htmlLang, type Lang, type Params } from '@genoffice/i18n'
+import { withVi } from '../../shared/with-vi'
 import { strings } from './strings'
 
-const translate = createI18n(strings)
+const translate = createI18n(withVi(strings))
 
 export type StringKey = keyof typeof strings.zh
 export type TFunc = (key: StringKey, params?: Params) => string

@@ -1,7 +1,7 @@
-import { defineStrings } from '@genoffice/i18n'
+import { withVi } from '../../shared/with-vi'
 
 /** Strings for the Zotero integration in the References tab. */
-export const zoteroStrings = defineStrings({
+export const zoteroStrings = withVi({
   zh: {
     zoteroCitation: 'Zotero 引文',
     zoteroCitationTip: '使用 Zotero 添加引文；光标在现有引文中时可编辑',

@@ -27,4 +27,9 @@ export const strings = {
     ...ribbonStrings['zh-TW'],
     ...paneStrings['zh-TW'],
   },
+  vi: {
+    ...appStrings.vi,
+    ...ribbonStrings.vi,
+    ...paneStrings.vi,
+  },
 }

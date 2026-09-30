@@ -6,6 +6,10 @@
 
 import type { WorkbookStyleEdit } from '../shared/edit-schemas'
 
+/// Excel grid bounds, mirrored from gateway/xlsx-gateway.ts: importing them
+/// would close a cycle, and this file already needs the row count to clamp.
+const MAX_GRID_ROWS = 1_048_576
+
 export type StructuralOp =
   | {
       readonly kind: 'insert-rows' | 'remove-rows' | 'insert-cols' | 'remove-cols'
@@ -133,6 +137,15 @@ export function inferWorksheetAddresses(worksheetXml: string): string {
 
 function readTagAttribute(tag: string, name: string): string | undefined {
   return new RegExp(`(?:^|\\s)${name}="([^"]*)"`).exec(tag)?.[1]
+}
+
+function setTagAttribute(tag: string, name: string, value: string): string {
+  const pattern = new RegExp(`((?:^|\\s)${name}=")[^"]*(")`)
+  if (!pattern.test(tag)) return addTagAttribute(tag, name, value)
+  return tag.replace(
+    pattern,
+    (_match, prefix: string, suffix: string) => `${prefix}${value}${suffix}`,
+  )
 }
 
 function addTagAttribute(tag: string, name: string, value: string): string {
@@ -326,12 +339,19 @@ function formatSize(size: number): string {
 function applyRowAttributeOp(xml: string, op: AxisAttributeOp): string {
   // col-only op: never dispatched here, but narrow the union for the checks below
   if ('style' in op) return xml
+  // start/end are 0-based. The op schema caps `row`, but a direct caller need
+  // not, and an uncapped span materialises <row r="5000000">. Clamp the tail;
+  // a span starting outside the grid is dropped rather than written onto the
+  // last row in its place.
+  const start = op.start
+  const end = Math.min(op.end, MAX_GRID_ROWS - 1)
+  if (start > end) return xml
   const seen = new Set<number>()
   let result = xml.replace(/<row\b([^>]*?)(\/>|>)/g, (full, attributes: string, close: string) => {
     const rowNumber = /(?:^|\s)r="([0-9]+)"/.exec(attributes)?.[1]
     if (rowNumber === undefined) return full
     const rowIndex = Number(rowNumber) - 1
-    if (rowIndex < op.start || rowIndex > op.end) return full
+    if (rowIndex < start || rowIndex > end) return full
     seen.add(rowIndex)
     let patched = attributes
     if ('size' in op) {
@@ -364,7 +384,7 @@ function applyRowAttributeOp(xml: string, op: AxisAttributeOp): string {
         ? (op.level > 0 ? ` outlineLevel="${op.level}"` : '') +
           (op.collapsed ? ' collapsed="1"' : '')
         : ' hidden="1"'
-  for (let rowIndex = op.start; rowIndex <= op.end; rowIndex += 1) {
+  for (let rowIndex = start; rowIndex <= end; rowIndex += 1) {
     if (seen.has(rowIndex)) continue
     result = insertEmptyRow(result, rowIndex + 1, newAttributes)
   }
@@ -1319,14 +1339,22 @@ function transformSheetColumns(xml: string, shift: Shift): string {
 }
 
 function transformColDefinitions(xml: string, shift: Shift): string {
-  return xml.replace(
-    /<col\b([^>]*?)\bmin="([0-9]+)"([^>]*?)\bmax="([0-9]+)"([^>]*?)\/>/g,
-    (_full, b1: string, min: string, b2: string, max: string, b3: string) => {
-      const moved = moveRange(Number(min) - 1, Number(max) - 1, shift)
-      if (moved === null) return ''
-      return `<col${b1}min="${moved.start + 1}"${b2}max="${moved.end + 1}"${b3}/>`
-    },
-  )
+  // Attribute order carries no meaning in XML, so read min/max by name rather
+  // than assuming min comes first: the old pattern only matched the schema
+  // order, and a <col> written max-before-min was left unshifted, stranding
+  // its width on the wrong columns after an insert or delete.
+  return xml.replace(/<col\b([^>]*?)\/>/g, (full, attributes: string) => {
+    const min = readPositiveInteger(readTagAttribute(attributes, 'min'))
+    const max = readPositiveInteger(readTagAttribute(attributes, 'max'))
+    if (min === undefined || max === undefined) return full
+    const moved = moveRange(min - 1, max - 1, shift)
+    if (moved === null) return ''
+    return setTagAttribute(
+      setTagAttribute(full, 'min', String(moved.start + 1)),
+      'max',
+      String(moved.end + 1),
+    )
+  })
 }
 
 /// Rewrites `<f>` bodies plus shared/array formula `ref` attributes, and the

@@ -7,6 +7,7 @@ import {
   LANGS,
   macShortcutsToWin,
   normalizeLang,
+  type Params,
 } from '../src/index'
 
 describe('normalizeLang', () => {
@@ -121,6 +122,15 @@ describe('format', () => {
     expect(format('no params')).toBe('no params')
   })
 
+  it('leaves the placeholder in place for a nullish param value', () => {
+    // hasOwn is true for a key explicitly set to undefined/null, and
+    // String(undefined) is the literal text "undefined"
+    expect(format('Deleted {n} files', { n: undefined } as unknown as Params)).toBe(
+      'Deleted {n} files',
+    )
+    expect(format('Deleted {n} files', { n: null } as unknown as Params)).toBe('Deleted {n} files')
+  })
+
   it('does not leak prototype properties into placeholders', () => {
     expect(format('{toString}', {})).toBe('{toString}')
     expect(format('{constructor} and {valueOf}', {})).toBe('{constructor} and {valueOf}')
@@ -209,6 +219,7 @@ describe('createI18n', () => {
     he: { hello: 'שלום {name}', plain: 'קבצים' },
     hi: { hello: 'नमस्ते {name}', plain: 'फ़ाइलें' },
     'zh-TW': { hello: '你好 {name}', plain: '檔案' },
+    vi: { hello: 'Xin chao {name}', plain: 'Tep' },
   })
 
   it('translates per language with interpolation', () => {

@@ -1,4 +1,4 @@
-import { defineStrings } from '@genoffice/i18n'
+import { withVi } from '../../shared/with-vi'
 import { zh } from './ribbon/zh'
 import { en } from './ribbon/en'
 import { ja } from './ribbon/ja'
@@ -21,7 +21,7 @@ import { hi } from './ribbon/hi'
 import { zhTW } from './ribbon/zh-TW'
 
 /** Copy for Ribbon / InsertDialogs / insert-presets / icons */
-export const ribbonStrings = defineStrings({
+export const ribbonStrings = withVi({
   zh,
   en,
   ja,

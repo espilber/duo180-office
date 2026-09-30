@@ -1,4 +1,4 @@
-import { defineStrings } from '@genoffice/i18n'
+import { withVi } from '../../shared/with-vi'
 
 const en = {
   ribbonTableStyleOptions: 'Table Style Options',
@@ -31,7 +31,7 @@ const en = {
  * reviewed terminology. Keeping one complete key set prevents partially
  * translated dialogs and lets language packs override the shard incrementally.
  */
-export const tableStrings = defineStrings({
+export const tableStrings = withVi({
   zh: en,
   en,
   ja: en,

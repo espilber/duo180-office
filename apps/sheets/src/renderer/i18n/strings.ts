@@ -22,4 +22,5 @@ export const strings = {
   he: { ...appStrings.he, ...dialogStrings.he },
   hi: { ...appStrings.hi, ...dialogStrings.hi },
   'zh-TW': { ...appStrings['zh-TW'], ...dialogStrings['zh-TW'] },
+  vi: { ...appStrings.vi, ...dialogStrings.vi },
 }

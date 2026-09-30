@@ -1,4 +1,4 @@
-import { defineStrings } from '@genoffice/i18n'
+import { withVi } from '../../shared/with-vi'
 import { zh } from './panes/zh'
 import { en } from './panes/en'
 import { ja } from './panes/ja'
@@ -21,7 +21,7 @@ import { hi } from './panes/hi'
 import { zhTW } from './panes/zh-TW'
 
 /** Copy for the panes/show views (animation, presenter, slide show, comments, format, ...) */
-export const paneStrings = defineStrings({
+export const paneStrings = withVi({
   zh,
   en,
   ja,

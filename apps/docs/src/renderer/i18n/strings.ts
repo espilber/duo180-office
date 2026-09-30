@@ -145,4 +145,11 @@ export const strings = {
     ...editorStrings['zh-TW'],
     ...zoteroStrings['zh-TW'],
   },
+  vi: {
+    ...appStrings.vi,
+    ...ribbonStrings.vi,
+    ...tableStrings.vi,
+    ...editorStrings.vi,
+    ...zoteroStrings.vi,
+  },
 }

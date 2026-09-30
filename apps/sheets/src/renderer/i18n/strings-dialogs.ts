@@ -1,4 +1,4 @@
-import { defineStrings } from '@genoffice/i18n'
+import { withVi } from '../../shared/with-vi'
 import { zh } from './dialogs/zh'
 import { en } from './dialogs/en'
 import { ja } from './dialogs/ja'
@@ -21,7 +21,7 @@ import { hi } from './dialogs/hi'
 import { zhTW } from './dialogs/zh-TW'
 
 /** Copy for the dialogs (advanced filter, cell format, pivot table, header/footer, symbols, slicer…) */
-export const dialogStrings = defineStrings({
+export const dialogStrings = withVi({
   zh,
   en,
   ja,

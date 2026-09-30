@@ -1,4 +1,4 @@
-import { defineStrings } from '@genoffice/i18n'
+import { withVi } from '../../shared/with-vi'
 import { zh } from './app/zh'
 import { en } from './app/en'
 import { ja } from './app/ja'
@@ -21,7 +21,7 @@ import { hi } from './app/hi'
 import { zhTW } from './app/zh-TW'
 
 /** Strings for App.tsx / SettingsModal / non-Ribbon components (keys use the app prefix to mark the area) */
-export const appStrings = defineStrings({
+export const appStrings = withVi({
   zh,
   en,
   ja,

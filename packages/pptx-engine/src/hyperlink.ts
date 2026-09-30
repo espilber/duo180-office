@@ -12,7 +12,7 @@
  * current fragment, then reparse the whole slide (same path as appendRawElements).
  */
 import type { GroupElement, Slide } from './types'
-import { escapeXmlAttr } from './xml-utils'
+import { escapeXmlAttr, maxRelationshipIdNumber } from './xml-utils'
 import { sliceGroupChildXmls } from './parse'
 import { relsPathFor, resolveTarget } from './zip'
 import { cleanupSupersededSlideResources } from './resource-cleanup'
@@ -44,9 +44,7 @@ function appendRel(
   const { archive } = opened
   const relsPath = relsPathFor(slide.path)
   const rels = archive.readText(relsPath) ?? EMPTY_RELS
-  let maxRid = 0
-  for (const m of rels.matchAll(/Id=(?:"rId(\d+)"|'rId(\d+)')/g))
-    maxRid = Math.max(maxRid, Number(m[1] ?? m[2]))
+  const maxRid = maxRelationshipIdNumber(rels)
   const rid = `rId${maxRid + 1}`
   const mode = external ? ' TargetMode="External"' : ''
   const relXml = `<Relationship Id="${rid}" Type="${type}" Target="${escapeXmlAttr(target)}"${mode}/>`
@@ -289,7 +287,7 @@ export function getSlideLinks(
       if (el.type === 'group') {
         // Restrict the group's own match to its nvGrpSpPr header so a child link
         // doesn't make the whole group clickable
-        const own = /<p:nvGrpSpPr>[\s\S]*?<\/p:nvGrpSpPr>/.exec(xml)?.[0] ?? ''
+        const own = /<p:nvGrpSpPr\b[^>]*>[\s\S]*?<\/p:nvGrpSpPr>/.exec(xml)?.[0] ?? ''
         const target = resolveLinkInXml(opened, slide, own)
         if (target) out.push({ elementId: el.id, target })
         // Child fragments are in document order, matching (grp as GroupElement).children

@@ -13,7 +13,7 @@
  */
 import { deflateSync } from 'node:zlib'
 import type { EmuRect, Slide } from './types'
-import { creationIdXml, escapeXmlAttr } from './xml-utils'
+import { creationIdXml, escapeXmlAttr, maxRelationshipIdNumber } from './xml-utils'
 import { relsPathFor } from './zip'
 import { appendRawElements, type OpenedPptx } from './index'
 import { nextCNvPrId } from './insert'
@@ -96,10 +96,19 @@ export function solidPng(w: number, h: number, rgb: [number, number, number]): B
 
 // ── Shared part / rels surgery ─────────────────────────────────────────
 
+const DEFAULT_TAG = /<Default\b[^>]*\/?>/g
+
+/** Any <Default> already declaring this extension, whatever its attribute order or quoting. */
+function hasDefaultFor(ct: string, ext: string): boolean {
+  const re = new RegExp(`\\bExtension\\s*=\\s*(["'])${ext}\\1`)
+  for (const tag of ct.matchAll(DEFAULT_TAG)) if (re.test(tag[0])) return true
+  return false
+}
+
 function ensureDefaultContentType(opened: OpenedPptx, ext: string, mime: string): void {
   const ctPath = '[Content_Types].xml'
   const ct = opened.archive.readText(ctPath)
-  if (ct && !new RegExp(`<Default Extension="${ext}"`).test(ct)) {
+  if (ct && !hasDefaultFor(ct, ext)) {
     const dflt = `<Default Extension="${ext}" ContentType="${mime}"/>`
     opened.archive.entries.set(
       ctPath,
@@ -133,8 +142,7 @@ function appendRels(
   let xml =
     opened.archive.readText(relsPath) ??
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>'
-  let maxRid = 0
-  for (const m of xml.matchAll(/Id="rId(\d+)"/g)) maxRid = Math.max(maxRid, Number(m[1]))
+  let maxRid = maxRelationshipIdNumber(xml)
   const rids: string[] = []
   for (const rel of rels) {
     const rid = `rId${++maxRid}`

@@ -376,7 +376,10 @@ function buildChartNodeInner(
 
   // ── Value range + nice ticks (primary/secondary axes independent) ──
   if (!priVals.length) return null
-  const catCount = Math.max(model.categories.length, ...model.series.map((s) => s.values.length), 1)
+  const catCount = arrayMax(
+    model.series.map((s) => s.values.length),
+    Math.max(model.categories.length, 1),
+  )
   // Percent stacked: normalize each value to its category share (%) — stacking only applies to bar series
   // Pure line charts stack their lines in stacked/percentStacked grouping (PPT accumulates
   // per category); in combos the overlay lines stay raw
@@ -516,7 +519,10 @@ function buildChartNodeInner(
     ? 0
     : model.valAxis?.tickLblGarbage
       ? measure(fmtDataLabel(0, model.valAxis?.numFmt), labelSizePx) * 1.2
-      : Math.max(...tickLabels.map((t) => measure(t, labelSizePx)), 0)
+      : arrayMax(
+          tickLabels.map((t) => measure(t, labelSizePx)),
+          0,
+        )
   // Axis titles draw at their own run size/weight; measure and reserve with that style
   const titleSizePxOf = (a: { titleSizePt?: number } | undefined, dflt: number) =>
     a?.titleSizePt ? ptToPx(a.titleSizePt, vp.scale) : dflt
@@ -544,7 +550,12 @@ function buildChartNodeInner(
     vp.scale,
   )
   const secTickLabels = sec ? sec.ticks.map((t) => fmtNum(t)) : []
-  const y2LabelW = sec ? Math.max(...secTickLabels.map((t) => measure(t, secLabelSizePx)), 0) : 0
+  const y2LabelW = sec
+    ? arrayMax(
+        secTickLabels.map((t) => measure(t, secLabelSizePx)),
+        0,
+      )
+    : 0
   const valTitle2SizePx = titleSizePxOf(model.valAxis2, secLabelSizePx)
   const axisTitle2W =
     sec && model.valAxis2?.title && !model.valAxis2.titleOverlay
@@ -1204,9 +1215,9 @@ function buildChartNodeInner(
       if (model.stock.hiLowLines) {
         node.axisLines.push({
           x1: x,
-          y1: yOfS(Math.max(...vals)),
+          y1: yOfS(arrayMax(vals)),
           x2: x,
-          y2: yOfS(Math.min(...vals)),
+          y2: yOfS(arrayMin(vals)),
           color: '#000000',
           widthPx: lineWidth,
         })
@@ -1900,20 +1911,36 @@ function buildBar3DNode(
     !!model.valAxis?.hidden || !!model.valAxis?.tickLblHidden || !!model.valAxis?.tickLblGarbage
   const valNoReserve = !!model.valAxis?.hidden || !!model.valAxis?.tickLblHidden
   const tickLabels = ticks.map((t) => fmtNum(t))
-  const tickW = valNoReserve ? 0 : Math.max(...tickLabels.map((t) => measure(t, labelSizePx)), 0)
+  const tickW = valNoReserve
+    ? 0
+    : arrayMax(
+        tickLabels.map((t) => measure(t, labelSizePx)),
+        0,
+      )
   // Side legends draw on the right (addSeriesLegend's convention, matching the 2D builders)
   const legendW =
     legendPos === 'r' || legendPos === 'l'
       ? labelSizePx +
-        Math.max(...model.series.map((s) => measure(s.name ?? '', labelSizePx)), 0) +
+        arrayMax(
+          model.series.map((s) => measure(s.name ?? '', labelSizePx)),
+          0,
+        ) +
         12
       : 0
-  const nCats = Math.max(model.categories.length, ...model.series.map((s) => s.values.length), 1)
+  const nCats = arrayMax(
+    model.series.map((s) => s.values.length),
+    Math.max(model.categories.length, 1),
+  )
   const nSer = Math.max(model.series.length, 1)
   // Series names ride the depth axis on the right (c:serAx); PowerPoint lets them run
   // into the legend gutter, so only half their width narrows the stage
   const serAxW = b3.serAxLabels
-    ? (Math.max(...model.series.map((s) => measure(s.name ?? '', catLabelSizePx)), 0) + 8) / 2
+    ? (arrayMax(
+        model.series.map((s) => measure(s.name ?? '', catLabelSizePx)),
+        0,
+      ) +
+        8) /
+      2
     : 0
   const availX = pad + tickW + 8
   const availR = box.w - pad - legendW - serAxW
@@ -2115,7 +2142,10 @@ function buildArea3DNode(
 
   const allVals = model.series.flatMap((s) => s.values.filter((v): v is number => v != null))
   if (!allVals.length) return null
-  const nCats = Math.max(model.categories.length, ...model.series.map((s) => s.values.length), 1)
+  const nCats = arrayMax(
+    model.series.map((s) => s.values.length),
+    Math.max(model.categories.length, 1),
+  )
   const nSer = Math.max(model.series.length, 1)
   const catAbsTotals = Array.from({ length: nCats }, (_, i) =>
     model.series.reduce((a, s) => a + Math.abs(s.values[i] ?? 0), 0),
@@ -2157,11 +2187,19 @@ function buildArea3DNode(
   const legendW =
     legendPos === 'r' || legendPos === 'l'
       ? labelSizePx +
-        Math.max(...model.series.map((s) => measure(s.name ?? '', labelSizePx)), 0) +
+        arrayMax(
+          model.series.map((s) => measure(s.name ?? '', labelSizePx)),
+          0,
+        ) +
         12
       : 0
   const serAxW = a3.serAxLabels
-    ? (Math.max(...model.series.map((s) => measure(s.name ?? '', catLabelSizePx)), 0) + 8) / 2
+    ? (arrayMax(
+        model.series.map((s) => measure(s.name ?? '', catLabelSizePx)),
+        0,
+      ) +
+        8) /
+      2
     : 0
   const catLabelsOff =
     !!model.catAxis?.hidden || !!model.catAxis?.tickLblHidden || !!model.catAxis?.tickLblGarbage
@@ -2188,7 +2226,12 @@ function buildArea3DNode(
     const tickLabels = t.ticks.map((v) =>
       grouping === 'percentStacked' ? `${fmtNum(v)}%` : fmtNum(v),
     )
-    const tickW = valNoReserve ? 0 : Math.max(...tickLabels.map((s) => measure(s, labelSizePx)), 0)
+    const tickW = valNoReserve
+      ? 0
+      : arrayMax(
+          tickLabels.map((s) => measure(s, labelSizePx)),
+          0,
+        )
     const availX = pad + tickW + 8
     const availR = box.w - pad - legendW - serAxW
     const availY = pad + (legendPos === 't' ? legendH + 4 : 0) + labelSizePx * 0.6
@@ -2409,7 +2452,10 @@ function buildHBarNode(
 
   const allVals = model.series.flatMap((s) => s.values.filter((v): v is number => v != null))
   if (!allVals.length) return null
-  const catCount = Math.max(model.categories.length, ...model.series.map((s) => s.values.length), 1)
+  const catCount = arrayMax(
+    model.series.map((s) => s.values.length),
+    Math.max(model.categories.length, 1),
+  )
   const catAbsTotals = Array.from({ length: catCount }, (_, i) =>
     model.series.reduce((a, s) => a + Math.abs(s.values[i] ?? 0), 0),
   )
@@ -2493,7 +2539,10 @@ function buildHBarNode(
     model.series.some((s) => s.name)
       ? labelSizePx * 0.5 +
         4 +
-        Math.max(...model.series.map((s) => measure(s.name ?? '', labelSizePx)), 0) +
+        arrayMax(
+          model.series.map((s) => measure(s.name ?? '', labelSizePx)),
+          0,
+        ) +
         8
       : 0
   const plotR = box.w - pad - labelSizePx * 0.7 - legendW
@@ -2791,7 +2840,10 @@ function buildScatterNode(
   const pad = Math.max(4, box.w * 0.01)
   const legendPos = model.legendPos
   const legendH = legendPos === 't' || legendPos === 'b' ? labelSizePx * 1.6 : 0
-  const yLabelW = Math.max(...yTicksR.ticks.map((t) => measure(fmtNum(t), labelSizePx)), 0)
+  const yLabelW = arrayMax(
+    yTicksR.ticks.map((t) => measure(fmtNum(t), labelSizePx)),
+    0,
+  )
   const plotX = pad + yLabelW + 10
   const plotY = pad + (legendPos === 't' ? legendH + 4 : 0) + labelSizePx * 0.6
   const plotR = box.w - pad - labelSizePx * 0.7
@@ -3151,7 +3203,10 @@ function buildRadarNode(
   vp: Viewport,
   metrics: FontMetricsProvider,
 ): ChartRenderNode | null {
-  const n = Math.max(model.categories.length, ...model.series.map((s) => s.values.length))
+  const n = arrayMax(
+    model.series.map((s) => s.values.length),
+    model.categories.length,
+  )
   if (n < 3) return null
   const allVals = model.series.flatMap((s) => s.values.filter((v): v is number => v != null))
   if (!allVals.length) return null
@@ -3188,7 +3243,10 @@ function buildRadarNode(
   )
   const sideLegendW =
     legendPos === 'l' || legendPos === 'r' || legendPos === 'tr'
-      ? Math.max(...model.series.map((s) => measure(s.name ?? '', labelSizePx)), 0) +
+      ? arrayMax(
+          model.series.map((s) => measure(s.name ?? '', labelSizePx)),
+          0,
+        ) +
         labelSizePx * 2.2
       : 0
   const plotW = box.w - pad * 2 - sideLegendW - maxCatW * 2
@@ -3414,7 +3472,7 @@ function ppTicks(
 
 /** Logarithmic value axis: one tick per power of the base; auto ends snap to the powers
  *  enclosing the positive data (PowerPoint: 9..960 on base 10 → 1, 10, 100, 1000). */
-function logTicks(
+export function logTicks(
   posDataMin: number,
   dataMax: number,
   explicitMin: number | undefined,
@@ -3423,28 +3481,55 @@ function logTicks(
 ): { min: number; max: number; ticks: number[] } {
   // log(1000)/log(10) = 2.999…: snap exponents with slack so exact powers stay put
   const lg = (v: number) => Math.log(v) / Math.log(base)
-  const lo =
+  // A data point near 1e308 overflows `base ** e` to Infinity, and on an
+  // unguarded axis "Infinity <= Infinity" never terminates the tick loop
+  // below (one hostile number then froze the slide forever). Clamp both ends
+  // to finite values and cap the tick count.
+  let lo =
     explicitMin && explicitMin > 0
       ? explicitMin
       : base **
         Math.floor(lg(Number.isFinite(posDataMin) && posDataMin > 0 ? posDataMin : 1) + 1e-9)
+  if (!Number.isFinite(lo) || lo <= 0) lo = base
   let hi =
-    explicitMax && explicitMax > lo
+    explicitMax && explicitMax > lo && Number.isFinite(explicitMax)
       ? explicitMax
       : base ** Math.ceil(lg(Math.max(dataMax, lo * base)) - 1e-9)
-  if (hi <= lo) hi = lo * base
+  if (!Number.isFinite(hi) || hi <= lo) hi = Math.min(lo * base, Number.MAX_VALUE)
+  if (!Number.isFinite(hi)) hi = Number.MAX_VALUE
   const ticks: number[] = []
   if (Math.abs(lg(lo) - Math.round(lg(lo))) > 1e-9) ticks.push(lo)
-  for (let e = Math.ceil(lg(lo) - 1e-9); base ** e <= hi * (1 + 1e-9); e++)
-    ticks.push(round12(base ** e))
+  // hi * (1 + 1e-9) itself overflows to Infinity when hi is MAX_VALUE, and
+  // "base ** e <= Infinity" is always true — clamp the comparison bound too.
+  const cap = Math.min(hi * (1 + 1e-9), Number.MAX_VALUE)
+  for (let e = Math.ceil(lg(lo) - 1e-9); base ** e <= cap && ticks.length < MAX_LOG_TICKS; e++) {
+    const v = base ** e
+    // Past MAX_VALUE — and rounding (v * 1e12) would overflow too — the axis
+    // ends at the last representable tick.
+    if (!Number.isFinite(v)) break
+    const tick = round12(v)
+    if (!Number.isFinite(tick)) break
+    ticks.push(tick)
+  }
+  // The axis still needs one anchor even when every decade rounded past the
+  // numeric ceiling.
+  if (!ticks.length) ticks.push(lo)
   return { min: lo, max: hi, ticks }
 }
 
+/** Hard ceiling for log-axis tick/minor generation: a finite axis has at most
+ *  a few hundred decades even at base 2, so hitting this means the range was
+ *  non-finite and the render must degrade instead of spin. */
+const MAX_LOG_TICKS = 200
+
 /** Minor positions of a log axis: 2..base-1 multiples of every decade inside the range. */
-function logMinors(min: number, max: number, base: number): number[] {
+export function logMinors(min: number, max: number, base: number): number[] {
   const out: number[] = []
+  // Same non-finite guard as logTicks: an infinite range made the decade loop
+  // below run forever.
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min <= 0 || max <= min) return out
   const e0 = Math.floor(Math.log(min) / Math.log(base) + 1e-9)
-  for (let e = e0; base ** e < max; e++)
+  for (let e = e0; base ** e < max && out.length < MAX_LOG_TICKS * base; e++)
     for (let k = 2; k < base; k++) {
       const v = k * base ** e
       if (v > min * (1 + 1e-9) && v < max * (1 - 1e-9)) out.push(round12(v))
