@@ -106,7 +106,7 @@ export function activeCsvSheet(
 }
 
 /// A worksheet by id through the CsvWorksheet slice (the active sheet when
-/// omitted) — the AI create_document path's analog of activeCsvSheet.
+/// omitted) — the create_document path's analog of activeCsvSheet.
 export function csvSheetById(runtime: UniverRuntime | null, sheetId?: string): CsvWorksheet | null {
   const workbook = runtime?.univerAPI.getActiveWorkbook()
   const worksheet =

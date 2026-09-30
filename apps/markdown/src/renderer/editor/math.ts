@@ -19,7 +19,7 @@ const StrictInlineMath = InlineMath.extend({
 })
 
 /**
- * AI chatbots (Gemini, Claude) emit LaTeX with \(...\) inline and \[...\]
+ * Some chatbots (Gemini, Claude) emit LaTeX with \(...\) inline and \[...\]
  * block delimiters, but the editor only tokenizes $...$ / $$...$$. Normalize
  * pasted text so pasted formulas render instead of staying plain text.
  * Currency ($5, $10) is untouched: only backslash delimiters convert.

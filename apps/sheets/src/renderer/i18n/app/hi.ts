@@ -277,17 +277,7 @@ export const hi = {
   appSavedTwoPhase: 'सहेजा गया।',
   appSaveSecondFailed:
     'संरचना सहेजी गई, लेकिन दूसरा चरण (पिवट टेबल/तालिकाएँ/परिभाषित नाम) विफल रहा: {reason}',
-  appReadyInitial: 'स्थानीय, नियतात्मक AI कमांड के लिए तैयार।',
-  appAiThinking: 'AI सोच रहा है…',
-  appAiDone: 'AI पूर्ण हुआ',
-  appAiTurnLimit:
-    '(इस अनुरोध के लिए टूल-कॉल की सीमा पूरी हो गई; ऊपर का उत्तर अब तक पढ़ी गई जानकारी पर आधारित है और अधूरा हो सकता है।)',
-  appAiTruncatedNote: '(उत्तर लंबाई सीमा के कारण कट गया और अधूरा हो सकता है।)',
-  appAiStopped: '(रोका गया)',
-  appAiNoSummary: 'AI बिना सारांश के समाप्त हुआ।',
-  appAiNoAction:
-    'AI ने कोई कार्रवाई नहीं की और कोई जवाब नहीं दिया। फिर से आज़माएँ या दूसरे शब्दों में कहें।',
-  appNewConversation: 'नई बातचीत शुरू हुई।',
+  appReadyInitial: 'तैयार',
   appPivotCellNoEdit: 'यह सेल पिवट टेबल का हिस्सा है — इसका संपादन अभी समर्थित नहीं है।',
   appAreaStreaming:
     'वह क्षेत्र अभी स्ट्रीम होकर लोड हो रहा है — थोड़ी देर बाद फिर से संपादित करने का प्रयास करें।',
@@ -585,8 +575,6 @@ export const hi = {
   appShowCommentsTitle: 'चयनित सेल की टिप्पणी बबल को पिन/अनपिन करें',
   appStructuralShiftBlocked:
     'इस शीट का कोई चार्ट या तालिका प्रभावित पंक्तियों/स्तंभों से जुड़ी है, इसलिए वे खिसक नहीं सकते; संरचनात्मक बदलाव सहेजा नहीं गया। उसे पूर्ववत करें (⌘Z) और फिर सहेजें।',
-  appAiChangesNotSaved:
-    'AI बदलाव लागू किए गए (सहेजे नहीं गए)। ⌘Z से पूर्ववत करें; ⌘S से फ़ाइल में सहेजें।',
   appChartUpdated: 'चार्ट अद्यतन किया गया।',
   appChartNotEditable: 'यह चार्ट संपादन-योग्य नहीं है।',
   appChartEditRecorded: 'चार्ट संपादन दर्ज किया गया — ⌘S से सहेजें।',
@@ -660,7 +648,6 @@ export const hi = {
   appRibbonCollapse: 'रिबन संक्षिप्त करें',
   appRibbonExpand: 'रिबन विस्तृत करें',
   appTabView: 'दृश्य',
-  appTabAi: 'AI',
   appTabChartDesign: 'चार्ट डिज़ाइन',
   appAutoSave: 'स्वतः सहेजें',
   appAutoSaveTitle: 'स्वतः सहेजना केवल क्लाउड फ़ाइलों के लिए उपलब्ध है',
@@ -677,8 +664,6 @@ export const hi = {
   appRevisionChip: 'संशोधन {revision}',
   appOpenWorkbookTitle: 'कार्यपुस्तिका खोलें (⌘O)',
   appOpenXlsx: 'XLSX खोलें',
-  appHideAi: 'AI छिपाएँ',
-  appShowAi: 'AI दिखाएँ',
   appCategoryAxisTitle: 'श्रेणी अक्ष शीर्षक',
   appValueAxisTitle: 'मान अक्ष शीर्षक',
   appTitleText: 'शीर्षक पाठ',
@@ -748,10 +733,6 @@ export const hi = {
   appFormatPaneDetail: 'अक्ष, अंतराल चौड़ाई, अलगाव',
   appGroupChartActions: 'चार्ट क्रियाएँ',
   appRemoveFromSheet: 'शीट से निकालें',
-  appGroupAiAssistant: 'AI सहायक',
-  appAiOpenPanelDetail: 'चैट साइडबार',
-  appGroupAiStarters: 'त्वरित प्रारंभ',
-  appAiStarterDetail: 'AI पैनल पर भेजें',
   appGroupTables: 'तालिकाएँ',
   appFromSelection: 'चयन से',
   appEditPivotTable: 'पिवट टेबल संपादित करें',
@@ -1209,11 +1190,6 @@ export const hi = {
   appGroupProofing: 'प्रूफ़िंग',
   appWorkbookStatsLabel: 'कार्यपुस्तिका सांख्यिकी',
   appSheetsCellsFormulas: 'शीट, सेल, सूत्र',
-  appTranslate: 'अनुवाद करें',
-  appGroupLanguage: 'भाषा',
-  appTranslateTitle: 'चयन का AI से अनुवाद करें',
-  appTranslatePrompt:
-    'चयनित रेंज के पाठ का {language} में अनुवाद करें और अनुवाद उन्हीं सेल में लिखें।',
   appNewCommentDetail: 'जोड़ें या संपादित करें',
   appDeleteLabel: 'हटाएँ',
   appNoteAtSelection: 'चयन पर नोट',

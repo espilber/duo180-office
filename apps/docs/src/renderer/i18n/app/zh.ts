@@ -50,7 +50,7 @@ export const zh = {
     '文档很大（{blocks} 个段落），已关闭输入时拼写检查；可在「审阅 › 拼写」重新开启',
   appFontsMissing: '文档字体未安装：{names}（已用替代字体显示）',
   appVerticalTextNotice: '文档包含竖排文字（暂以横排显示，保存不受影响）',
-  appNewDocCreated: '已新建空白文档,可在左侧 AI 面板直接描述要生成的内容',
+  appNewDocCreated: '已新建空白文档。',
   appNewFailed: '新建失败: {error}',
   appSaveFailed: '保存失败: {error}',
   appAutoSavedAt: '已自动保存 ({time})',
@@ -306,7 +306,6 @@ export const zh = {
   appTabDecimal: '小数点',
   appTabBar: '竖线',
   appTabClear: '清除',
-  // AI settings
   // Context menu
   appCut: '剪切',
   appCopy: '复制',

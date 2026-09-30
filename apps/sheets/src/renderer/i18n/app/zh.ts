@@ -244,16 +244,7 @@ export const zh = {
   appSaveSecondCanceled: '第二段保存被取消——结构已保存，透视表/表格/命名区域还未写入。',
   appSavedTwoPhase: '已保存。',
   appSaveSecondFailed: '结构已保存，但第二段（透视表/表格/命名区域）失败：{reason}',
-  // AI session / status bar
-  appReadyInitial: '就绪——可使用本地确定性 AI 命令。',
-  appAiThinking: 'AI 思考中…',
-  appAiDone: 'AI 已完成',
-  appAiTurnLimit: '（已达单次请求的工具调用轮数上限，以上是基于已读取信息的回答，可能不完整。）',
-  appAiTruncatedNote: '（回复因长度限制被截断,内容可能不完整。）',
-  appAiStopped: '（已停止）',
-  appAiNoSummary: 'AI 已完成，没有生成总结。',
-  appAiNoAction: 'AI 没有执行任何操作，也没有给出回复。请重试或换个说法。',
-  appNewConversation: '已开始新对话。',
+  appReadyInitial: '就绪',
   // Streaming load / edit gating
   appPivotCellNoEdit: '该单元格属于数据透视表——暂不支持编辑。',
   appAreaStreaming: '该区域还在流式加载——稍后再试。',
@@ -520,7 +511,6 @@ export const zh = {
   appShowCommentsTitle: '固定/取消固定所选单元格的批注气泡',
   appStructuralShiftBlocked:
     '此工作表上有图表或表格锚定在受影响的行/列上,无法平移,结构改动没有保存。请撤销该改动(⌘Z)后重新保存。',
-  appAiChangesNotSaved: '已应用 AI 更改(未保存)。可用 ⌘Z 撤销;用 ⌘S 保存到文件。',
   // Floating objects / chart editing
   appChartUpdated: '图表已更新。',
   appChartNotEditable: '该图表不可编辑。',
@@ -592,7 +582,6 @@ export const zh = {
   appRibbonCollapse: '折叠功能区',
   appRibbonExpand: '展开功能区',
   appTabView: '视图',
-  appTabAi: 'AI',
   appTabChartDesign: '图表设计',
   // Title bar / status
   appAutoSave: '自动保存',
@@ -610,8 +599,6 @@ export const zh = {
   appRevisionChip: '第 {revision} 版',
   appOpenWorkbookTitle: '打开工作簿（⌘O）',
   appOpenXlsx: '打开 XLSX',
-  appHideAi: '隐藏 AI',
-  appShowAi: '显示 AI',
   // Chart text dialog
   appCategoryAxisTitle: '分类轴标题',
   appValueAxisTitle: '数值轴标题',
@@ -686,11 +673,6 @@ export const zh = {
   appFormatPaneDetail: '坐标轴、分类间距、分离',
   appGroupChartActions: '图表操作',
   appRemoveFromSheet: '从工作表中删除',
-  // AI Tab
-  appGroupAiAssistant: 'AI 助手',
-  appAiOpenPanelDetail: '侧栏对话',
-  appGroupAiStarters: '快速开始',
-  appAiStarterDetail: '发送到 AI 面板',
   // Insert tab
   appGroupTables: '表格',
   appFromSelection: '基于当前选区',
@@ -1153,10 +1135,6 @@ export const zh = {
   appGroupProofing: '校对',
   appWorkbookStatsLabel: '工作簿统计信息',
   appSheetsCellsFormulas: '工作表、单元格、公式',
-  appTranslate: '翻译',
-  appGroupLanguage: '语言',
-  appTranslateTitle: '用 AI 翻译选区文本',
-  appTranslatePrompt: '把当前选中区域的文本翻译成{language},并把译文写回原单元格。',
   appNewCommentDetail: '添加或编辑',
   appDeleteLabel: '删除',
   appNoteAtSelection: '所选位置的注释',

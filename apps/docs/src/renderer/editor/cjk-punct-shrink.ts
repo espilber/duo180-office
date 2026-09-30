@@ -263,7 +263,7 @@ interface TextSlot {
  * The paragraph's DOM text nodes mapped to document positions. Valid only when
  * the DOM text is exactly the node's text in order (decorations split text
  * nodes but never add characters); widget text, cursor wrappers or inline
- * atoms make it null and the caller falls back to view.coordsAtPos. The direct
+ * atoms make it null and the programmatic path falls back to view.coordsAtPos. The direct
  * map avoids ProseMirror's per-position descent through every top-level
  * block, which made per-character measurement scale with document size.
  */

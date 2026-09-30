@@ -9,7 +9,7 @@ import { type TabStop } from '@genoffice/docx-engine'
 /**
  * Custom schema mirroring the docx-engine Block model 1:1.
  * Every top-level node carries `docxIndex` (patch anchor, null = new) and
- * `aiChanged` (diff highlighting for AI edits).
+ * `aiChanged` (diff highlighting for programmatic edits).
  */
 
 import { SearchHighlight } from './extensions'
@@ -800,7 +800,7 @@ export const TabStopExtension = Extension.create({
     // stops, or the paragraph's custom w:tabs). Lists indent and tables move
     // to the next cell — those handlers live on DocListItem / NativeTableSupport
     // and run after this one returns false. An unhandled Tab would leave the
-    // editor and cycle the ribbon buttons (github.com/genspark-ai/genoffice/issues/101).
+    // editor and cycle the ribbon buttons (issue #101).
     const insertTab = () => {
       if (!this.editor.isEditable) return false
       if (this.editor.isActive('docListItem')) return false

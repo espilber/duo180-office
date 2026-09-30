@@ -49,7 +49,7 @@ export const zhTW = {
     '文件很大（{blocks} 個段落），已關閉輸入時拼字檢查；可在「校閱 › 拼字」重新開啟',
   appFontsMissing: '文件字型未安裝：{names}（已以替代字型顯示）',
   appVerticalTextNotice: '文件包含直排文字（暫以橫排顯示，儲存不受影響）',
-  appNewDocCreated: '已建立空白文件,可在左側 AI 面板直接描述要產生的內容',
+  appNewDocCreated: '已建立空白文件。',
   appNewFailed: '建立失敗: {error}',
   appSaveFailed: '儲存失敗: {error}',
   appAutoSavedAt: '已自動儲存 ({time})',

@@ -13,7 +13,7 @@ import { ASSET_SNIFF_BYTES, sniffBinaryAssetMime } from './asset-mime'
  * file opens anywhere without the sibling assets/ folder. The working
  * document is never rewritten — inlining happens only at export time (a
  * saved document deliberately keeps images in assets/: megabyte base64
- * lines make the source and AI edits fragile).
+ * lines make the source and programmatic edits fragile).
  */
 export interface SingleFileHtmlResult {
   html: string

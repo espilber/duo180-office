@@ -859,7 +859,7 @@ export function cssFontFamily(font: string, followAltName = true): string {
   // Aptos (M365 cloud face, never installed locally): line metrics equal
   // Calibri's (Word probe 2026-08-22) but its advances do not, so the
   // size-adjusted Carlito aliases in fonts.css stand in (probe 2026-09-03).
-  // 'GenOffice PUA Blank' keeps AI-residue PUA tokens invisible like Word
+  // 'GenOffice PUA Blank' keeps legacy PUA tokens invisible like Word
   // (Carlito would otherwise supply a box .notdef for them).
   if (f.includes('aptos')) {
     // the aliases are calibrated for the body and Display cuts only; Aptos

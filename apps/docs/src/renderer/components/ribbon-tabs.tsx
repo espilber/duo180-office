@@ -755,7 +755,7 @@ export type { RevisionDisplayMode }
 
 interface ReviewTabProps extends TabProps {
   commentCount: number
-  /** unresolved root comments; 0 disables the AI resolve-comments action */
+  /** unresolved root comments; 0 disables the resolve-comments action */
   openCommentCount: number
   resolvedCommentCount: number
   onShowComments: () => void

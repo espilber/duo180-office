@@ -1,9 +1,6 @@
 import type { zh } from './zh'
 
 export const ar = {
-  ribbonAiCreditNote: 'يستدعي الذكاء الاصطناعي ويستهلك الرصيد',
-  ribbonAiRewriteConfirm:
-    'هذا الإجراء يستدعي الذكاء الاصطناعي: يستهلك الرصيد وقد يعيد كتابة المحتوى بالكامل. هل تريد المتابعة؟ (لن يتم السؤال مرة أخرى.)',
   // tabs
   ribbonTabFile: 'ملف',
   ribbonTabHome: 'الصفحة الرئيسية',
@@ -178,8 +175,6 @@ export const ar = {
   ribbonFlipH: 'انعكاس أفقي',
   ribbonFlipV: 'انعكاس رأسي',
   ribbonDistributeHint: '{title} (حدد 3 عناصر على الأقل)',
-  ribbonAiAssistant: 'Genspark',
-  ribbonAiAssistantTip: 'إظهار أو إخفاء لوحة مساعد الذكاء الاصطناعي',
   ribbonGroupTable: 'جدول',
   ribbonInsertTableTip: 'إدراج جدول (نمط افتراضي؛ اختر الصفوف والأعمدة)',
   ribbonTablePickerHint: 'اختر الصفوف والأعمدة',
@@ -375,16 +370,6 @@ export const ar = {
     'التمرن على التوقيت: تشغيل العرض من البداية وتسجيل زمن كل شريحة؛ يمكن حفظه كتوقيت تقدم تلقائي (يُحفظ في pptx)',
   ribbonRecord: 'تسجيل',
   ribbonGroupProofing: 'تدقيق',
-  ribbonSpellCheck: 'تدقيق إملائي',
-  ribbonSpellCheckTip:
-    'يفحص الذكاء الاصطناعي كل شريحة بحثًا عن الأخطاء الإملائية والنحوية وعلامات الترقيم ويصححها مباشرة',
-  ribbonSpellCheckPrompt:
-    'افحص هذا العرض التقديمي شريحة تلو الأخرى بحثًا عن الأخطاء الإملائية والنحوية وعلامات الترقيم: صحّح المشكلات مباشرة بالأدوات مع الحفاظ على التخطيط والمعنى؛ ثم قدّم تقريرًا موجزًا بالتغييرات لكل شريحة، وتخطَّ الشرائح الخالية من المشكلات.',
-  ribbonTranslate: 'ترجمة',
-  ribbonTranslateTip:
-    'يترجم الذكاء الاصطناعي نص الشريحة الحالية إلى اللغة المختارة (يستبدل النص الأصلي)',
-  ribbonTranslatePrompt:
-    'ترجم كل نص الشريحة الحالية إلى {lang}: استبدل النص الأصلي بالأدوات مع الحفاظ على التخطيط وأحجام الخطوط والألوان.',
   ribbonLangEnglish: 'الإنجليزية',
   ribbonLangSimplifiedChinese: 'الصينية المبسطة',
   ribbonLangTraditionalChinese: 'الصينية التقليدية',

@@ -39,8 +39,7 @@ export const nl = {
     'Relatieve afbeeldingen en stijlen verschijnen in het voorbeeld zodra het bestand is opgeslagen',
   inspectHint:
     'Klik op een element in het voorbeeld om het te selecteren, dubbelklik om tekst te bewerken',
-  nodeDynamic:
-    'Dit element is door het paginascript gemaakt en bestaat niet in de bron; bewerk via de bron of AI',
+  nodeDynamic: 'Dit element is door het paginascript gemaakt en bestaat niet in de bron; bewerk via de bron',
   nodeDynamicShort: 'door script gemaakt',
   nodeDirty:
     'Het paginascript heeft dit element gewijzigd; bewerkingen in de bron kunnen worden overschreven',

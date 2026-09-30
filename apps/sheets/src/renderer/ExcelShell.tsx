@@ -178,7 +178,7 @@ interface ExcelShellProps {
   readonly canSaveAs: boolean
   readonly onSaveAs: () => void
   /// QAT redo (workbook history, same path as the app menu's ⇧⌘Z); undo
-  /// shares the AI panel's onUndo above.
+  /// shares the side panel's onUndo above.
   readonly onRedo: () => void
   /// Undo/redo stack occupancy: the QAT buttons grey out when there is nothing to apply.
   readonly canUndo: boolean
@@ -356,7 +356,7 @@ export function ExcelShell({
   openingWorkbookRef.current = openingWorkbook
   useEffect(() => {
     // Shortcuts that write to the sheet must not fire from a text field —
-    // neither app fields (AI chat, dialogs) nor Univer's own (find/replace,
+    // neither app fields (chat, dialogs) nor Univer's own (find/replace,
     // rule panels, formula bar), which are native inputs INSIDE the Univer
     // container. isGridKeyTarget tells the grid's hidden focus host apart
     // from all of those; only Univer knows whether a cell is being edited.

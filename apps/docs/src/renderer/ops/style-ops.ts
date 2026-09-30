@@ -3,7 +3,7 @@ import type { StyleParaProps, StyleRunProps, StyleUpsert } from '@genoffice/docx
 import { parsePoints } from './lengths'
 import type { Op, OpContext, OpDef, OpResult, RunEnv, SelRange, Target, TopBlock } from './ops'
 
-/** A style as the AI sees it: the styles.xml entry plus definitions pending in this session. */
+/** A style as the caller sees it: the styles.xml entry plus definitions pending in this session. */
 export interface AiStyleInfo {
   styleId: string
   name: string

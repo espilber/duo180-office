@@ -294,17 +294,7 @@ export const pt = {
   appSavedTwoPhase: 'Salvo.',
   appSaveSecondFailed:
     'A estrutura foi salva, mas a segunda fase (Tabelas Dinâmicas/tabelas/nomes definidos) falhou: {reason}',
-  appReadyInitial: 'Pronto para um comando de IA local e determinístico.',
-  appAiThinking: 'A IA está pensando…',
-  appAiDone: 'A IA terminou',
-  appAiTurnLimit:
-    '(Limite de chamadas de ferramentas atingido para esta solicitação; a resposta acima se baseia no que foi lido até agora e pode estar incompleta.)',
-  appAiTruncatedNote:
-    '(A resposta foi cortada pelo limite de comprimento e pode estar incompleta.)',
-  appAiStopped: '(interrompido)',
-  appAiNoSummary: 'A IA terminou sem gerar um resumo.',
-  appAiNoAction: 'A IA não realizou nenhuma ação nem deu resposta. Tente novamente ou reformule.',
-  appNewConversation: 'Nova conversa iniciada.',
+  appReadyInitial: 'Pronto',
   appPivotCellNoEdit:
     'Esta célula faz parte de uma Tabela Dinâmica — a edição ainda não é suportada.',
   appAreaStreaming:
@@ -625,7 +615,6 @@ export const pt = {
   appShowCommentsTitle: 'Fixar/desafixar o balão de comentário da célula selecionada',
   appStructuralShiftBlocked:
     'Um gráfico ou tabela nesta planilha está ancorado às linhas/colunas afetadas; não é possível deslocá-las e a alteração estrutural não foi salva. Desfaça (⌘Z) e salve novamente.',
-  appAiChangesNotSaved: 'Alterações de IA aplicadas (não salvas). Desfaça com ⌘Z; salve com ⌘S.',
   appChartUpdated: 'Gráfico atualizado.',
   appChartNotEditable: 'Este gráfico não é editável.',
   appChartEditRecorded: 'Edição do gráfico registrada — salve com ⌘S.',
@@ -700,7 +689,6 @@ export const pt = {
   appRibbonCollapse: 'Recolher a Faixa de Opções',
   appRibbonExpand: 'Expandir a Faixa de Opções',
   appTabView: 'Exibir',
-  appTabAi: 'IA',
   appTabChartDesign: 'Design do Gráfico',
   appAutoSave: 'Salvamento Automático',
   appAutoSaveTitle: 'O Salvamento Automático está disponível apenas para arquivos na nuvem',
@@ -717,8 +705,6 @@ export const pt = {
   appRevisionChip: 'Revisão {revision}',
   appOpenWorkbookTitle: 'Abrir Pasta de Trabalho (⌘O)',
   appOpenXlsx: 'Abrir XLSX',
-  appHideAi: 'Ocultar IA',
-  appShowAi: 'Mostrar IA',
   appCategoryAxisTitle: 'Título do Eixo de Categorias',
   appValueAxisTitle: 'Título do Eixo de Valores',
   appTitleText: 'Texto do título',
@@ -789,10 +775,6 @@ export const pt = {
   appFormatPaneDetail: 'Eixos, espaçamento, separação',
   appGroupChartActions: 'Ações do gráfico',
   appRemoveFromSheet: 'Remover da planilha',
-  appGroupAiAssistant: 'Assistente de IA',
-  appAiOpenPanelDetail: 'Barra lateral de chat',
-  appGroupAiStarters: 'Início rápido',
-  appAiStarterDetail: 'Enviar ao painel de IA',
   appGroupTables: 'Tabelas',
   appFromSelection: 'Da seleção',
   appEditPivotTable: 'Editar Tabela Dinâmica',
@@ -1251,11 +1233,6 @@ export const pt = {
   appGroupProofing: 'Revisão de Texto',
   appWorkbookStatsLabel: 'Estatísticas da Pasta de Trabalho',
   appSheetsCellsFormulas: 'Planilhas, células, fórmulas',
-  appTranslate: 'Traduzir',
-  appGroupLanguage: 'Idioma',
-  appTranslateTitle: 'Traduzir a seleção com IA',
-  appTranslatePrompt:
-    'Traduza o texto do intervalo selecionado para {language} e escreva as traduções nas mesmas células.',
   appNewCommentDetail: 'Adicionar ou editar',
   appDeleteLabel: 'Excluir',
   appNoteAtSelection: 'Anotação na seleção',

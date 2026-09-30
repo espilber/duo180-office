@@ -720,7 +720,7 @@ export function proposeOperations(
         }
         const target = parseAddress(operation.address)
         // Pivot output is baked into the worksheet (same guard as the cell
-        // editor); the AI apply path bypasses the editor so check here.
+        // editor); the programmatic apply path bypasses the editor so check here.
         const sheetMeta = state.file.sheets.find((sheet) => sheet.id === operation.sheetId)
         if (
           sheetMeta?.pivotRanges.some(
@@ -1129,7 +1129,7 @@ export function collectStreamedFormulaPrecedents(
  * harvested formula text; the copy shifts every text by one uniform block
  * delta, so guards run per distinct text. Same discipline as any streamed
  * formula write — quadratic-cost formulas and reference sets past the shared
- * session pin budget refuse, and the caller falls back to the frozen-values
+ * session pin budget refuse, and the programmatic path falls back to the frozen-values
  * copy with a notice instead of failing the batch. References inside the
  * copy's own write rectangle are pinned like any other precedent: the copied
  * cells are plain journal cells otherwise, and viewport eviction would wipe

@@ -61,7 +61,7 @@ const LENGTH = /^\s*(\d+(?:\.\d+)?)\s*(twip|pt|px|in|cm|mm)\s*$/i
 /** Word's default body width (Letter, 1in margins); only used for tables without any width */
 const DEFAULT_BODY_TWIPS = 9360
 
-/** Largest table length honored (~35in in twips): uncapped AI lengths
+/** Largest table length honored (~35in in twips): uncapped supplied lengths
  *  break layout, mirroring the parseEmu/parseTwips budget. */
 export const MAX_TABLE_TWIPS = 50400
 

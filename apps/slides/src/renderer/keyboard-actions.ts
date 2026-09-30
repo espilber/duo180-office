@@ -211,7 +211,7 @@ export function handleGlobalKeydown(
     return
   }
   if (editing || inField) return
-  // ⌘C/⌘X with text dragged in plain DOM (e.g. AI panel, focus on body): let the
+  // ⌘C/⌘X with text dragged in plain DOM (e.g. side panel, focus on body): let the
   // native copy run instead of hijacking it for the slide/element clipboard
   if (mod && !e.altKey && !e.shiftKey && ['c', 'C', 'x', 'X'].includes(e.key)) {
     const sel = window.getSelection()
@@ -366,7 +366,7 @@ export function handleGlobalKeydown(
     // Delete/Backspace removes the selected slides (same action as the thumbnail
     // context menu; deleteSlides keeps ≥1 slide). Not while inking or in
     // reading view (both clear the selection), and not with plain-DOM text
-    // dragged (AI panel): the key targets that text.
+    // dragged (side panel): the key targets that text.
     if (
       !mod &&
       !e.altKey &&

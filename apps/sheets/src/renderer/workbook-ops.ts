@@ -1,7 +1,7 @@
 /**
  * Workbook operation appliers for the sheets renderer.
  *
- * AI DSL operations (pivot / table / table-column adds) and pivot dialog
+ * DSL operations (pivot / table / table-column adds) and pivot dialog
  * helpers applied against the live Univer runtime. Extracted from App.tsx;
  * every function receives its runtime and state explicitly.
  */
@@ -117,7 +117,7 @@ export function applyAiTableAdd(
   })
 }
 
-/// AI add_table_row: inserts one or more rows into a session-added table.
+/// add_table_row: inserts one or more rows into a session-added table.
 /// The row index is 1-based within the data region (header = row 0).
 export function applyAiTableRowAdd(
   runtime: UniverRuntime,
@@ -144,7 +144,7 @@ export function applyAiTableRowAdd(
   })
 }
 
-/// AI delete_table_row: removes one or more rows from a session-added table.
+/// delete_table_row: removes one or more rows from a session-added table.
 export function applyAiTableRowDelete(
   runtime: UniverRuntime,
   state: LazyWorkbookState,
@@ -164,7 +164,7 @@ export function applyAiTableRowDelete(
   })
 }
 
-/// AI delete_table_column: removes one or more columns from a session-added table.
+/// delete_table_column: removes one or more columns from a session-added table.
 export function applyAiTableColumnDelete(
   runtime: UniverRuntime,
   state: LazyWorkbookState,

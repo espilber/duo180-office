@@ -346,7 +346,7 @@ export function openAdvancedFilterDialog(ctx: DataToolsContext): void {
 }
 
 /// The Advanced Filter dialog's OK: lands through the same
-/// applyFilterCriteria path as the AI op set_filter_criteria.
+/// applyFilterCriteria path as the op set_filter_criteria.
 export function handleApplyAdvancedFilter(
   ctx: DataToolsContext,
   criteria: AdvancedFilterCriteria,
@@ -627,7 +627,7 @@ export function handleOutline(
 }
 
 /// Home → Format as Table: the manual entry over the same engine as the
-/// AI add_table op (Univer table rendering + journal + native table part).
+/// add_table op (Univer table rendering + journal + native table part).
 export function handleFormatAsTable(ctx: DataToolsContext, style: string): void {
   const runtime = ctx.univerRef.current
   if (!runtime) return

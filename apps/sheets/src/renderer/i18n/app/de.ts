@@ -293,18 +293,7 @@ export const de = {
   appSavedTwoPhase: 'Gespeichert.',
   appSaveSecondFailed:
     'Die Struktur ist gespeichert, aber die zweite Phase (PivotTables/Tabellen/definierte Namen) ist fehlgeschlagen: {reason}',
-  appReadyInitial: 'Bereit für einen lokalen, deterministischen KI-Befehl.',
-  appAiThinking: 'KI denkt nach…',
-  appAiDone: 'KI ist fertig',
-  appAiTurnLimit:
-    '(Limit der Toolaufruf-Runden für diese Anfrage erreicht; die Antwort oben basiert auf dem bisher Gelesenen und ist möglicherweise unvollständig.)',
-  appAiTruncatedNote:
-    '(Die Antwort wurde durch das Längenlimit abgeschnitten und ist möglicherweise unvollständig.)',
-  appAiStopped: '(gestoppt)',
-  appAiNoSummary: 'KI ist fertig, hat aber keine Zusammenfassung erstellt.',
-  appAiNoAction:
-    'Die KI hat nichts ausgeführt und keine Antwort gegeben. Versuchen Sie es erneut oder formulieren Sie um.',
-  appNewConversation: 'Neue Unterhaltung gestartet.',
+  appReadyInitial: 'Bereit',
   appPivotCellNoEdit:
     'Diese Zelle gehört zu einer PivotTable — ihre Bearbeitung wird noch nicht unterstützt.',
   appAreaStreaming:
@@ -631,8 +620,6 @@ export const de = {
   appShowCommentsTitle: 'Kommentar-Sprechblase der ausgewählten Zelle anheften/lösen',
   appStructuralShiftBlocked:
     'Ein Diagramm oder eine Tabelle auf diesem Blatt ist an den betroffenen Zeilen/Spalten verankert; sie können nicht verschoben werden, die Strukturänderung wurde nicht gespeichert. Machen Sie sie rückgängig (⌘Z) und speichern Sie erneut.',
-  appAiChangesNotSaved:
-    'KI-Änderungen angewendet (nicht gespeichert). Rückgängig mit ⌘Z; speichern mit ⌘S.',
   appChartUpdated: 'Diagramm aktualisiert.',
   appChartNotEditable: 'Dieses Diagramm ist nicht bearbeitbar.',
   appChartEditRecorded: 'Diagrammbearbeitung aufgezeichnet — mit ⌘S speichern.',
@@ -710,7 +697,6 @@ export const de = {
   appRibbonCollapse: 'Menüband reduzieren',
   appRibbonExpand: 'Menüband erweitern',
   appTabView: 'Ansicht',
-  appTabAi: 'KI',
   appTabChartDesign: 'Diagrammentwurf',
   appAutoSave: 'AutoSpeichern',
   appAutoSaveTitle: 'AutoSpeichern ist nur für Clouddateien verfügbar',
@@ -728,8 +714,6 @@ export const de = {
   appRevisionChip: 'Revision {revision}',
   appOpenWorkbookTitle: 'Arbeitsmappe öffnen (⌘O)',
   appOpenXlsx: 'XLSX öffnen',
-  appHideAi: 'KI ausblenden',
-  appShowAi: 'KI einblenden',
   appCategoryAxisTitle: 'Titel der Kategorieachse',
   appValueAxisTitle: 'Titel der Wertachse',
   appTitleText: 'Titeltext',
@@ -799,10 +783,6 @@ export const de = {
   appFormatPaneDetail: 'Achsen, Abstandsbreite, Explosion',
   appGroupChartActions: 'Diagrammaktionen',
   appRemoveFromSheet: 'Vom Blatt entfernen',
-  appGroupAiAssistant: 'KI-Assistent',
-  appAiOpenPanelDetail: 'Chat-Seitenleiste',
-  appGroupAiStarters: 'Schnellstart',
-  appAiStarterDetail: 'An KI-Bereich senden',
   appGroupTables: 'Tabellen',
   appFromSelection: 'Aus der Auswahl',
   appEditPivotTable: 'PivotTable bearbeiten',
@@ -1261,11 +1241,6 @@ export const de = {
   appGroupProofing: 'Rechtschreibung',
   appWorkbookStatsLabel: 'Arbeitsmappenstatistiken',
   appSheetsCellsFormulas: 'Blätter, Zellen, Formeln',
-  appTranslate: 'Übersetzen',
-  appGroupLanguage: 'Sprache',
-  appTranslateTitle: 'Auswahl mit KI übersetzen',
-  appTranslatePrompt:
-    'Übersetze den Text der Auswahl nach {language} und schreibe die Übersetzungen in dieselben Zellen zurück.',
   appNewCommentDetail: 'Hinzufügen oder bearbeiten',
   appDeleteLabel: 'Löschen',
   appNoteAtSelection: 'Notiz an der Auswahl',

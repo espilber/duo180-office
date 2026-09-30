@@ -500,7 +500,7 @@ export function rejectAllRevisions(editor: Editor): void {
   applyRevisions(editor, collectRevisions(editor.state.doc), 'reject')
 }
 
-/** accept / reject only the revisions of one author (e.g. the AI assistant) */
+/** accept / reject only the revisions of one author (e.g. the manual dialog) */
 export function applyRevisionsBy(editor: Editor, author: string, mode: 'accept' | 'reject'): void {
   applyRevisions(
     editor,

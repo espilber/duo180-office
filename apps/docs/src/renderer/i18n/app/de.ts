@@ -52,8 +52,7 @@ export const de = {
   appFontsMissing: 'Fehlende Dokumentschriftarten: {names} (Ersatzschriften werden angezeigt)',
   appVerticalTextNotice:
     'Dieses Dokument enthält vertikalen Text (vorerst horizontal angezeigt; das Speichern ist nicht betroffen)',
-  appNewDocCreated:
-    'Leeres Dokument erstellt. Beschreiben Sie im KI-Bereich links, was generiert werden soll',
+  appNewDocCreated: 'Leeres Dokument erstellt.',
   appNewFailed: 'Erstellen des Dokuments fehlgeschlagen: {error}',
   appSaveFailed: 'Speichern fehlgeschlagen: {error}',
   appAutoSavedAt: 'Automatisch gespeichert ({time})',

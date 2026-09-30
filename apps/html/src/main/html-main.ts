@@ -396,7 +396,7 @@ export function setHtmlFileSavedHook(hook: (wc: WebContents, path: string) => vo
   fileSavedHook = hook
 }
 
-/** An untitled document got a provisional name from the user's first AI request — the shell titles its tab */
+/** An untitled document got a provisional name from the user's first request — the shell titles its tab */
 let provisionalTitleHook: ((wc: WebContents, title: string) => void) | null = null
 
 export function setHtmlProvisionalTitleHook(hook: (wc: WebContents, title: string) => void): void {
@@ -1043,7 +1043,7 @@ function registerHtmlIpc(): void {
     }
   })
 
-  // remote pictures (AI-generated or hot-linked) are downloaded here: the frame's fetch is
+  // remote pictures (generated or hot-linked) are downloaded here: the frame's fetch is
   // CORS-bound, and fetchRemoteImage refuses private/link-local targets
   ipcMain.handle(HTML_CHANNELS.fetchImage, async (_e, url: unknown): Promise<ImageData | null> => {
     if (typeof url !== 'string' || !/^https?:/i.test(url)) return null

@@ -186,7 +186,6 @@ export const ja = {
   ribbonReplaceTip: 'テキストを検索して置換',
   ribbonSelectAll: 'すべて選択',
   ribbonSelectAllTip: '文書全体を選択',
-  // Home · AI
   // Table Design
   ribbonRemoveTableStyleTip: '表のスタイルを削除',
   ribbonNoStyle: 'スタイルなし',

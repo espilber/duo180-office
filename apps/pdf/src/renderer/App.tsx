@@ -108,6 +108,7 @@ import { platformShortcuts } from '@genoffice/i18n'
 import { Dropdown, useDismissablePopover, useRibbonCollapse } from '@genoffice/ui'
 import { useI18n } from './i18n/locale'
 import { useAutosave } from './useAutosave'
+import { ensureSavedPath } from './ensure-saved'
 import type {
   AnnotDeleteInput,
   DrawingInput,
@@ -285,7 +286,14 @@ export default function App() {
     expand: t('ribbonExpand'),
   })
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
-  const [filePath, setFilePath] = useState('')
+  // `filePathRef` mirrors `filePath` so async flows (save → print/export) can read the
+  // path a just-finished Save As adopted, instead of the stale '' captured by their render.
+  const [filePath, setFilePathState] = useState('')
+  const filePathRef = useRef('')
+  const setFilePath = useCallback((next: string) => {
+    filePathRef.current = next
+    setFilePathState(next)
+  }, [])
   const [status, setStatus] = useState<'loading' | 'error' | 'empty' | 'password' | 'ready'>(
     'loading',
   )
@@ -3344,11 +3352,12 @@ export default function App() {
       edits !== textEdits ||
       noteFlush.drawings !== drawings ||
       noteFlush.noteEdits !== noteEdits
-    const untitled = filePath === ''
+    const untitled = filePathRef.current === ''
     // A pathless (untitled) document always saves through the Save As dialog — even
     // with no pending edits — because it has no name yet. A path-backed one with
     // nothing to save is a no-op.
-    if (!untitled && (!anythingToSave || !filePath)) return Promise.resolve(!anythingToSave)
+    if (!untitled && (!anythingToSave || !filePathRef.current))
+      return Promise.resolve(!anythingToSave)
     // An explicit save opts this file into autosave
     if (!autosave) savedOnceRef.current = true
     // Content-derived naming (docs/sheets analog): the topmost text this save inserts
@@ -3384,7 +3393,7 @@ export default function App() {
       const result = await window.pdfApi.save(
         untitled
           ? { path: '', defaultSaveName: nameCandidate, ...editsPayload(edits, noteFlush) }
-          : { path: filePath, ...editsPayload(edits, noteFlush) },
+          : { path: filePathRef.current, ...editsPayload(edits, noteFlush) },
       )
       if (result.ok && result.canceled) {
         // Save As was dismissed: the blank document is untouched, nothing was written
@@ -3405,7 +3414,7 @@ export default function App() {
         noticeSkippedImages(result.skippedImageEdits)
       }
       // A pathless document just landed on disk under the picked name: adopt that path
-      const savedPath = untitled ? (result.path ?? '') : filePath
+      const savedPath = untitled ? (result.path ?? '') : filePathRef.current
       if (untitled && savedPath) setFilePath(savedPath)
       // Reload: changes are in the file now, canvas renders directly, saved pending ops are cleared
       try {
@@ -3430,7 +3439,7 @@ export default function App() {
       // it is skipped; the main process no-ops for every unmarked file anyway.
       if (!untitled && nameCandidate) {
         try {
-          const renamed = await window.pdfApi.autoRename(filePath, nameCandidate)
+          const renamed = await window.pdfApi.autoRename(filePathRef.current, nameCandidate)
           if (renamed.renamed && renamed.path) setFilePath(renamed.path)
         } catch {
           /* naming is best-effort; the save itself already succeeded */
@@ -4891,14 +4900,25 @@ export default function App() {
     toastTimerRef.current = window.setTimeout(() => setDeleteToast(false), 5000)
   }
 
-  /** Extract/insert work on the file on disk — flush unsaved changes first; undefined = the save failed */
-  const flushThen = async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
+  /** Resolve the path a disk-backed operation must read. Pending edits are flushed
+      first; an untitled document runs its Save As flow and adopts the chosen path.
+      Null = the save was dismissed (silent) or failed (already reported). */
+  const ensureDiskPath = async (): Promise<string | null> => {
+    if (dirty && !(await save())) return null
+    return ensureSavedPath({ currentPath: () => filePathRef.current, save: () => save() })
+  }
+
+  /** Extract/insert/print work on the file on disk — flush unsaved changes first and
+      hand `fn` the freshly-resolved path (never a stale `filePath` from the caller's
+      render); undefined = the save was dismissed or failed */
+  const flushThen = async <T,>(fn: (path: string) => Promise<T>): Promise<T | undefined> => {
     if (redactions.length > 0) {
       opFailed(t('redactStructureBlocked'))
       return undefined
     }
-    if (dirty && !(await save())) return undefined
-    return fn()
+    const path = await ensureDiskPath()
+    if (!path) return undefined
+    return fn(path)
   }
 
   // File-level page operations shared by the ribbon dialogs and the AI tools. The
@@ -4907,7 +4927,7 @@ export default function App() {
   const FLUSH_FAILED = { ok: false, error: 'saving the pending edits failed' } as const
   // A canceled picker still comes after the flush, so the caller learns whether the save happened
   const runFileOp = async <R extends { ok: true } | { ok: false; error: string }>(
-    run: () => Promise<R>,
+    run: (path: string) => Promise<R>,
   ): Promise<Exclude<R, { canceled: true }> | FileOpCanceled | typeof FLUSH_FAILED> => {
     const flushed = dirty
     const result = await flushThen(run)
@@ -4917,39 +4937,41 @@ export default function App() {
     return result as Exclude<R, { canceled: true }>
   }
   const rewriteInPlace = async (
-    run: () => Promise<{ ok: true } | { ok: true; canceled: true } | { ok: false; error: string }>,
+    run: (
+      path: string,
+    ) => Promise<{ ok: true } | { ok: true; canceled: true } | { ok: false; error: string }>,
   ): Promise<FileOpResult> => {
     const result = await runFileOp(run)
     if (!result.ok || 'canceled' in result) return result
-    return { ok: true, pageCount: await loadDoc(filePath, doc) }
+    return { ok: true, pageCount: await loadDoc(filePathRef.current, doc) }
   }
   const baseName = () => fileName.replace(/\.pdf$/i, '')
 
   const extractPagesToFile = (visIdxs: number[]) => {
     const first = visIdxs[0]! + 1
     const last = visIdxs[visIdxs.length - 1]! + 1
-    return runFileOp(() =>
+    return runFileOp((path) =>
       window.pdfApi.extractPages({
-        path: filePath,
+        path,
         pages: visIdxs,
         suggestedName: `${baseName()}-${first === last ? `p${first}` : `p${first}-${last}`}.pdf`,
       }),
     )
   }
   const insertBlankPageAt = (afterVisIdx: number) =>
-    rewriteInPlace(() =>
-      window.pdfApi.insertBlankPage({ path: filePath, afterPageIndex: afterVisIdx }),
+    rewriteInPlace((path) =>
+      window.pdfApi.insertBlankPage({ path, afterPageIndex: afterVisIdx }),
     )
   const splitPdfToFolder = (chunkSize: number) =>
-    runFileOp(() => window.pdfApi.splitPdf({ path: filePath, chunkSize, baseName: baseName() }))
+    runFileOp((path) => window.pdfApi.splitPdf({ path, chunkSize, baseName: baseName() }))
   const mergePagesToFile = (
     perSheet: number,
     direction: 'horizontal' | 'vertical',
     separator: boolean,
   ) =>
-    runFileOp(() =>
+    runFileOp((path) =>
       window.pdfApi.mergePages({
-        path: filePath,
+        path,
         perSheet,
         direction,
         separator,
@@ -4957,19 +4979,19 @@ export default function App() {
       }),
     )
   const replacePagesOnDisk = (visIdxs: number[]) =>
-    rewriteInPlace(() => window.pdfApi.replacePages({ path: filePath, pages: visIdxs }))
+    rewriteInPlace((path) => window.pdfApi.replacePages({ path, pages: visIdxs }))
   const resizePages = (width: number, height: number) =>
-    rewriteInPlace(() => window.pdfApi.setPageSize({ path: filePath, width, height }))
+    rewriteInPlace((path) => window.pdfApi.setPageSize({ path, width, height }))
   const splitPagesToFile = (perPage: 2 | 4 | 9) =>
-    runFileOp(() =>
+    runFileOp((path) =>
       window.pdfApi.splitPages({
-        path: filePath,
+        path,
         perPage,
         suggestedName: `${baseName()}-split.pdf`,
       }),
     )
   const cropPagesOnDisk = (visIdxs: number[], rect: CropRect) =>
-    rewriteInPlace(() => window.pdfApi.cropPages({ path: filePath, pages: visIdxs, rect }))
+    rewriteInPlace((path) => window.pdfApi.cropPages({ path, pages: visIdxs, rect }))
 
   const extractPage = (origIdx: number) => extractPagesToFile([visList.indexOf(origIdx)])
 
@@ -4991,13 +5013,13 @@ export default function App() {
   }
 
   const insertPdf = (afterOrigIdx: number) =>
-    flushThen(async () => {
-      const result = await window.pdfApi.insertPdf({ path: filePath, afterPageIndex: afterOrigIdx })
+    flushThen(async (path) => {
+      const result = await window.pdfApi.insertPdf({ path, afterPageIndex: afterOrigIdx })
       if (!result.ok) {
         opFailed(result.error)
         return
       }
-      if (!('canceled' in result)) await loadDoc(filePath, doc)
+      if (!('canceled' in result)) await loadDoc(filePathRef.current, doc)
     })
 
   const insertBlankPage = (afterOrigIdx: number) => insertBlankPageAt(visList.indexOf(afterOrigIdx))
@@ -5020,10 +5042,10 @@ export default function App() {
   }
 
   const mergePdf = () =>
-    flushThen(async () => {
+    flushThen(async (path) => {
       const base = fileName.replace(/\.pdf$/i, '')
       const result = await window.pdfApi.mergePdf({
-        path: filePath,
+        path,
         suggestedName: `${base}-merged.pdf`,
       })
       if (!result.ok) opFailed(result.error)
@@ -5131,10 +5153,10 @@ export default function App() {
     if (printBusyRef.current) return
     printBusyRef.current = true
     try {
-      await flushThen(async () => {
+      await flushThen(async (path) => {
         setPrinting(true)
         try {
-          const data = await window.pdfApi.readFile(filePath)
+          const data = await window.pdfApi.readFile(path)
           const pdoc = await getDocument({ data: new Uint8Array(data), ...DOC_OPTS }).promise
           try {
             await printPdf(pdoc, pages)

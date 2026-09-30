@@ -289,7 +289,7 @@ function ImageTools(p: Props) {
   )
 }
 
-/** floating toolbar over the selected preview element (MaxGen / AI Design style) */
+/** floating toolbar over the selected preview element (MaxGen style) */
 export function FloatToolbar(p: Props) {
   const { t } = useI18n()
 

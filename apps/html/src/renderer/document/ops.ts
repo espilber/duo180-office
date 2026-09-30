@@ -3,7 +3,7 @@ import type { ParseMap } from './parse-map'
 import type { Patch } from './patch'
 
 /**
- * The single edit vocabulary shared by the AI (`apply_ops`) and the manual UI.
+ * The single edit vocabulary shared by the programmatic path (`apply_ops`) and the manual UI.
  * Every op compiles to text patches against one base version; the batch is
  * validated as a whole and applied atomically.
  */

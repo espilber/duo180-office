@@ -626,7 +626,7 @@ async function resolveSaveTarget(
 ): Promise<string | null | 'canceled'> {
   const current = savePathByWc.get(e.sender.id)
   if (mode === 'save' && current) return current
-  // AI auto-naming: silent first save of an untitled document
+  // Auto-naming: silent first save of an untitled document
   if (mode === 'save' && !current && suggestedName) {
     const base = suggestedName
       .replace(/[/\\:*?"<>|]/g, '_')

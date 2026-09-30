@@ -1501,7 +1501,7 @@ export const workbookTableAddSchema = z
     sheetId: z.string().min(1),
     /// Table range in final (post-operation) coordinates, header row included.
     area: cellAreaSchema,
-    /// Final unique table name (renderer-assigned when the AI op omits one).
+    /// Final unique table name (renderer-assigned when the op omits one).
     name: z.string().min(1).max(255),
     /// Header-row cell texts captured at apply time. The save reconciles them
     /// against journaled header-cell edits; blanks become Column1, Column2, …
@@ -1954,7 +1954,7 @@ export const workbookMediaRequestSchema = z
   })
   .strict()
 
-/// Reads a user-named local image for AI-proposed insertion; the main
+/// Reads a user-named local image for proposed insertion; the main
 /// process verifies extension, magic bytes, and size before returning.
 export const localImageRequestSchema = z
   .object({
@@ -2421,7 +2421,7 @@ export interface DesktopApi {
   /// Crash-recovery copy of the pending edits, written under userData.
   /// Best-effort: never prompts, never touches the opened file.
   writeWorkbookRecovery(request: WorkbookSaveRequest): Promise<{ ok: boolean }>
-  /// Rename a still-untitled workbook after AI-generated content (no-op unless
+  /// Rename a still-untitled workbook after generated content (no-op unless
   /// the file still carries the shell's auto-created untitled name).
   autoRenameWorkbook(
     sessionId: string,

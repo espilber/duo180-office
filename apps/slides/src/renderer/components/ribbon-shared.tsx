@@ -305,7 +305,7 @@ export function Group({
 
 export interface Props {
   hasDoc: boolean
-  /** True when no slide has real content — the one-click AI actions grey out then */
+  /** True when no slide has real content — the one-click actions grey out then */
   deckEmpty: boolean
   /** Undo/redo stack occupancy (pushed from the main process): the QAT buttons grey out when empty */
   canUndo: boolean

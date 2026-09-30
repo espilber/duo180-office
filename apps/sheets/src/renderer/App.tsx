@@ -459,7 +459,7 @@ export function App({
     )
   }, [pendingEdits])
   const [autoSave, setAutoSave] = useAutoSavePref('ai-sheets-auto-save', window.desktopApi)
-  // Ref mirror for callbacks captured when an AI run starts
+  // Ref mirror for callbacks captured when a run starts
   const autoSaveRef = useRef(autoSave)
   autoSaveRef.current = autoSave
   // AutoSave tick (docs/slides parity): every 30 s and on window blur, flush
@@ -1737,7 +1737,7 @@ export function App({
         if (event.id === SET_RANGE_VALUES_COMMAND || event.id === SET_RANGE_VALUES_MUTATION) {
           // Quadratic array-criteria formulas (distinct-count COUNTIF idioms
           // over 80k+ rows) freeze the main-thread formula engine for
-          // minutes; block them at the edit gate. The AI path is rejected
+          // minutes; block them at the edit gate. The programmatic path is rejected
           // earlier with a model-facing message — this covers typing, and the
           // mutation id covers paste/autofill, which apply mutations directly.
           // Engine-derived mutations (result apply, reference rewrites) carry
@@ -1808,7 +1808,7 @@ export function App({
             return
           }
           // The save aborts when a formula references only the deleted span;
-          // reject the removal up front like the AI path does (#1134). The
+          // reject the removal up front like the programmatic path does (#1134). The
           // remove commands act on the selection unless a range is given.
           if (sheet && /^sheet\.command\.remove-(row|col)/.test(event.id)) {
             const uiWorkbook = runtime.univerAPI.getActiveWorkbook()
@@ -2171,7 +2171,7 @@ export function App({
     if (runtime) queueDemoVisualInstall(runtime)
   }
 
-  /** Ribbon/dialog edits run the same executor as AI proposals (op-executor.ts). */
+  /** Ribbon/dialog edits run the same executor as proposals (op-executor.ts). */
   function runUiOps(
     ops: readonly WorkbookOperation[],
     successMessage?: string | null,
@@ -2883,7 +2883,7 @@ export function App({
     } else if (action === 'export-csv') {
       void handleExportCsvImpl(csvExportContext())
     } else if (action === 'undo' || action === 'redo') {
-      // The shell's own text fields (AI prompt, dialog inputs) keep native
+      // The shell's own text fields (prompt, dialog inputs) keep native
       // text undo; everywhere else ⌘Z means workbook history.
       const active = document.activeElement
       if (active instanceof HTMLTextAreaElement || active instanceof HTMLInputElement) {
@@ -2900,8 +2900,8 @@ export function App({
   handleSaveRef.current = handleSave
 
   // MCP visible-grid session (planning/mcp-server.md phase 2): the shell pushes
-  // read/apply/save commands; they run through the same executors the built-in
-  // AI uses. Handlers go through a ref so the bridge never sees stale closures.
+  // read/apply/save commands; they run through the same executors the UI uses
+  // Handlers go through a ref so the bridge never sees stale closures.
   mcpSheetHandlersRef.current = {
     hasWorkbook: () =>
       univerRef.current?.univerAPI.getActiveWorkbook() != null && lazyWorkbookRef.current != null,

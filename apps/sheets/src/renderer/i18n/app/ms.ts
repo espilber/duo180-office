@@ -278,17 +278,7 @@ export const ms = {
   appSavedTwoPhase: 'Disimpan.',
   appSaveSecondFailed:
     'Struktur telah disimpan, tetapi fasa kedua (Jadual Pangsi/jadual/nama tertakrif) gagal: {reason}',
-  appReadyInitial: 'Sedia untuk perintah AI setempat yang berketentuan.',
-  appAiThinking: 'AI sedang berfikir…',
-  appAiDone: 'AI selesai',
-  appAiTurnLimit:
-    '(Had pusingan panggilan alat untuk permintaan ini telah dicapai; jawapan di atas berdasarkan maklumat yang dibaca setakat ini dan mungkin tidak lengkap.)',
-  appAiTruncatedNote: '(Balasan terpotong kerana had panjang dan mungkin tidak lengkap.)',
-  appAiStopped: '(dihentikan)',
-  appAiNoSummary: 'AI selesai tanpa ringkasan.',
-  appAiNoAction:
-    'AI tidak melakukan sebarang tindakan dan tiada balasan. Cuba lagi atau ubah ayat.',
-  appNewConversation: 'Perbualan baharu dimulakan.',
+  appReadyInitial: 'Sedia',
   appPivotCellNoEdit: 'Sel ini sebahagian daripada Jadual Pangsi — pengeditannya belum disokong.',
   appAreaStreaming: 'Kawasan itu masih dimuatkan secara penstriman — cuba edit lagi sebentar.',
   appFormulaRecordedPartial:
@@ -588,8 +578,6 @@ export const ms = {
   appShowCommentsTitle: 'Semat/nyahsemat belon komen sel yang dipilih',
   appStructuralShiftBlocked:
     'Carta atau jadual pada helaian ini berlabuh pada baris/lajur terjejas, jadi tidak boleh dianjak; perubahan struktur tidak disimpan. Buat asal (⌘Z) dan simpan semula.',
-  appAiChangesNotSaved:
-    'Perubahan AI digunakan (belum disimpan). Buat asal dengan ⌘Z; simpan dengan ⌘S.',
   appChartUpdated: 'Carta dikemas kini.',
   appChartNotEditable: 'Carta ini tidak boleh diedit.',
   appChartEditRecorded: 'Suntingan carta direkodkan — simpan dengan ⌘S.',
@@ -662,7 +650,6 @@ export const ms = {
   appRibbonCollapse: 'Runtuhkan Reben',
   appRibbonExpand: 'Kembangkan Reben',
   appTabView: 'Pandangan',
-  appTabAi: 'AI',
   appTabChartDesign: 'Reka Bentuk Carta',
   appAutoSave: 'AutoSimpan',
   appAutoSaveTitle: 'AutoSimpan hanya tersedia untuk fail awan',
@@ -679,8 +666,6 @@ export const ms = {
   appRevisionChip: 'Semakan {revision}',
   appOpenWorkbookTitle: 'Buka Buku Kerja (⌘O)',
   appOpenXlsx: 'Buka XLSX',
-  appHideAi: 'Sembunyikan AI',
-  appShowAi: 'Tunjukkan AI',
   appCategoryAxisTitle: 'Tajuk Paksi Kategori',
   appValueAxisTitle: 'Tajuk Paksi Nilai',
   appTitleText: 'Teks tajuk',
@@ -750,10 +735,6 @@ export const ms = {
   appFormatPaneDetail: 'Paksi, lebar sela, pemisahan',
   appGroupChartActions: 'Tindakan carta',
   appRemoveFromSheet: 'Alih keluar daripada helaian',
-  appGroupAiAssistant: 'Pembantu AI',
-  appAiOpenPanelDetail: 'Bar sisi sembang',
-  appGroupAiStarters: 'Mula pantas',
-  appAiStarterDetail: 'Hantar ke panel AI',
   appGroupTables: 'Jadual',
   appFromSelection: 'Daripada pilihan',
   appEditPivotTable: 'Edit Jadual Pangsi',
@@ -1212,11 +1193,6 @@ export const ms = {
   appGroupProofing: 'Pembacaan Pruf',
   appWorkbookStatsLabel: 'Statistik Buku Kerja',
   appSheetsCellsFormulas: 'Helaian, sel, formula',
-  appTranslate: 'Terjemah',
-  appGroupLanguage: 'Bahasa',
-  appTranslateTitle: 'Terjemah pilihan dengan AI',
-  appTranslatePrompt:
-    'Terjemahkan teks dalam julat terpilih ke {language} dan tulis semula ke sel yang sama.',
   appNewCommentDetail: 'Tambah atau edit',
   appDeleteLabel: 'Padam',
   appNoteAtSelection: 'Nota pada pilihan',

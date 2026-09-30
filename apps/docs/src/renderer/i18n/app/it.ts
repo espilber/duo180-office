@@ -52,7 +52,7 @@ export const it = {
   appFontsMissing: 'Font del documento mancanti: {names} (mostrati sostituti)',
   appVerticalTextNotice:
     'Questo documento contiene testo verticale (mostrato orizzontalmente per ora; il salvataggio non è interessato)',
-  appNewDocCreated: 'Documento vuoto creato. Descrivi cosa generare nel pannello IA a sinistra.',
+  appNewDocCreated: 'Documento vuoto creato.',
   appNewFailed: 'Creazione del documento non riuscita: {error}',
   appSaveFailed: 'Salvataggio non riuscito: {error}',
   appAutoSavedAt: 'Salvato automaticamente ({time})',

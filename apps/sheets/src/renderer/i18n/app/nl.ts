@@ -289,17 +289,7 @@ export const nl = {
   appSavedTwoPhase: 'Opgeslagen.',
   appSaveSecondFailed:
     'De structuur is opgeslagen, maar de tweede fase (draaitabellen/tabellen/gedefinieerde namen) is mislukt: {reason}',
-  appReadyInitial: 'Gereed voor een lokale, deterministische AI-opdracht.',
-  appAiThinking: 'AI denkt na…',
-  appAiDone: 'AI is klaar',
-  appAiTurnLimit:
-    '(Limiet voor toolaanroepen voor deze aanvraag bereikt; het bovenstaande antwoord is gebaseerd op wat tot nu toe is gelezen en kan onvolledig zijn.)',
-  appAiTruncatedNote: '(Het antwoord is afgekapt door de lengtelimiet en is mogelijk onvolledig.)',
-  appAiStopped: '(gestopt)',
-  appAiNoSummary: 'AI is klaar zonder samenvatting.',
-  appAiNoAction:
-    'De AI heeft niets uitgevoerd en geen antwoord gegeven. Probeer opnieuw of herformuleer.',
-  appNewConversation: 'Nieuw gesprek gestart.',
+  appReadyInitial: 'Gereed',
   appPivotCellNoEdit:
     'Deze cel maakt deel uit van een draaitabel — bewerken wordt nog niet ondersteund.',
   appAreaStreaming: 'Dat gebied wordt nog streamend geladen — probeer het zo opnieuw te bewerken.',
@@ -618,8 +608,6 @@ export const nl = {
   appShowCommentsTitle: 'De opmerkingsballon van de geselecteerde cel vastzetten/losmaken',
   appStructuralShiftBlocked:
     'Een grafiek of tabel op dit blad is verankerd aan de betrokken rijen/kolommen; ze kunnen niet verschuiven en de structuurwijziging is niet opgeslagen. Maak deze ongedaan (⌘Z) en sla opnieuw op.',
-  appAiChangesNotSaved:
-    'AI-wijzigingen toegepast (niet opgeslagen). Ongedaan maken met ⌘Z; opslaan met ⌘S.',
   appChartUpdated: 'Grafiek bijgewerkt.',
   appChartNotEditable: 'Deze grafiek kan niet worden bewerkt.',
   appChartEditRecorded: 'Grafiekbewerking vastgelegd — sla op met ⌘S.',
@@ -697,7 +685,6 @@ export const nl = {
   appRibbonCollapse: 'Het lint samenvouwen',
   appRibbonExpand: 'Het lint uitvouwen',
   appTabView: 'Beeld',
-  appTabAi: 'AI',
   appTabChartDesign: 'Grafiekontwerp',
   appAutoSave: 'Automatisch opslaan',
   appAutoSaveTitle: 'Automatisch opslaan is alleen beschikbaar voor cloudbestanden',
@@ -714,8 +701,6 @@ export const nl = {
   appRevisionChip: 'Revisie {revision}',
   appOpenWorkbookTitle: 'Werkmap openen (⌘O)',
   appOpenXlsx: 'XLSX openen',
-  appHideAi: 'AI verbergen',
-  appShowAi: 'AI weergeven',
   appCategoryAxisTitle: 'Titel van categorieas',
   appValueAxisTitle: 'Titel van waardeas',
   appTitleText: 'Titeltekst',
@@ -785,10 +770,6 @@ export const nl = {
   appFormatPaneDetail: 'Assen, tussenruimte, uitlichten',
   appGroupChartActions: 'Grafiekacties',
   appRemoveFromSheet: 'Van werkblad verwijderen',
-  appGroupAiAssistant: 'AI-assistent',
-  appAiOpenPanelDetail: 'Chatzijbalk',
-  appGroupAiStarters: 'Snel starten',
-  appAiStarterDetail: 'Naar het AI-deelvenster sturen',
   appGroupTables: 'Tabellen',
   appFromSelection: 'Op basis van selectie',
   appEditPivotTable: 'Draaitabel bewerken',
@@ -1246,11 +1227,6 @@ export const nl = {
   appGroupProofing: 'Controle',
   appWorkbookStatsLabel: 'Werkmapstatistieken',
   appSheetsCellsFormulas: 'Werkbladen, cellen, formules',
-  appTranslate: 'Vertalen',
-  appGroupLanguage: 'Taal',
-  appTranslateTitle: 'Selectie vertalen met AI',
-  appTranslatePrompt:
-    'Vertaal de tekst in het geselecteerde bereik naar {language} en schrijf de vertalingen terug in dezelfde cellen.',
   appNewCommentDetail: 'Toevoegen of bewerken',
   appDeleteLabel: 'Verwijderen',
   appNoteAtSelection: 'Notitie bij de selectie',

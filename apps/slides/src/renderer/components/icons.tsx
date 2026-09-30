@@ -777,7 +777,7 @@ export function IconSparkle(props: IconProps) {
 }
 
 /** Remove Background: dashed marching-ants selection around a landscape photo
- * (sun + mountains), an AI sparkle in the top-right notch. */
+ * (sun + mountains), a sparkle in the top-right notch. */
 export function IconRemoveBg(props: IconProps) {
   return (
     <Svg {...props}>
@@ -1079,7 +1079,7 @@ export function IconDoc(props: IconProps) {
   )
 }
 
-/* ---------- AI panel ---------- */
+/* ---------- side panel ---------- */
 
 export function IconSend(props: IconProps) {
   return (
@@ -1130,7 +1130,7 @@ export function IconSidebarCollapse({ size = 24 }: IconProps) {
   )
 }
 
-/** Mirror of IconSidebarCollapse for the LEFT-docked AI panel.
+/** Mirror of IconSidebarCollapse for the LEFT-docked side panel.
  *  Sheets-parity glyph (16-canvas, 1.2/1.3 stroke), self-contained so the shared
  *  Svg wrapper's 24-canvas pinned stroke doesn't alter its weight. */
 export function IconSidebarCollapseLeft({ size = 24 }: IconProps) {

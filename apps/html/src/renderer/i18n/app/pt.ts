@@ -38,8 +38,7 @@ export const pt = {
   previewNeedsSave: 'Imagens e estilos relativos aparecem na visualização após salvar o arquivo',
   inspectHint:
     'Clique em um elemento na visualização para selecioná-lo; clique duas vezes para editar o texto',
-  nodeDynamic:
-    'Este elemento foi criado pelo script da página e não existe no código; edite pelo código ou pela IA',
+  nodeDynamic: 'Este elemento foi criado pelo script da página e não existe no código; edite pelo código',
   nodeDynamicShort: 'gerado por script',
   nodeDirty:
     'O script da página alterou este elemento; edições no código podem ser sobrescritas pelo script',

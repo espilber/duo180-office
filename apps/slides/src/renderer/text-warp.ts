@@ -17,7 +17,7 @@
  * Every glyph is emitted center-anchored: position = the character center, offset =
  * half the local box, so rotation and scaling spin around the center.
  *
- * Unsupported presets return null and the caller keeps the straight layout.
+ * Unsupported presets return null and the programmatic path keeps the straight layout.
  */
 import type { GlyphDraw } from './konva-adapter'
 

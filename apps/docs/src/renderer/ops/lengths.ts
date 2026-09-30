@@ -13,7 +13,7 @@ const LENGTH = /^\s*(-?\d+(?:\.\d+)?)\s*(emu|twips?|pt|px|in|cm|mm)\s*$/i
 
 /**
  * Largest magnitude a parsed length may have (~35in / ~89cm in EMU).
- * AI-supplied lengths are untrusted: uncapped, "99999999in" becomes ~1e14
+ * externally supplied lengths are untrusted: uncapped, "99999999in" becomes ~1e14
  * twips and breaks layout + save round-trip.
  */
 export const MAX_LENGTH_EMU = 32_000_000

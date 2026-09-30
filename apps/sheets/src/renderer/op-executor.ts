@@ -2,7 +2,7 @@
  * Applies a planned batch of workbook operations to the live Univer workbook:
  * prechecks, one undo item per batch, per-op facade calls and journal
  * records. Extracted from App.tsx so ribbon actions can run the same ops the
- * AI proposes; every function receives its App-scope context explicitly.
+ * Callers propose; every function receives its App-scope context explicitly.
  */
 import { IUndoRedoService } from '@univerjs/core'
 import type { CellBounds } from '@genoffice/xlsx-gateway/domain/chart-visual'
@@ -301,7 +301,7 @@ export function beginUndoBatch(runtime: UniverRuntime): { settle(): void } {
   }
 }
 
-/** Wraps ops the UI built (ribbon, dialogs) into the plan shape the AI path applies. */
+/** Wraps ops the UI built (ribbon, dialogs) into the plan shape the programmatic path applies. */
 export function planFromOps(
   ops: readonly WorkbookOperation[],
   workbook: ActiveWorkbook,
@@ -346,7 +346,7 @@ export function applyChangePlan(
   options: ApplyPlanOptions = {},
 ): Promise<ApplyOutcome> {
   // One apply at a time: the undo batch and aiBulkUndoGate are not reentrant,
-  // and the async prechecks yield — a ribbon click landing during an AI apply
+  // and the async prechecks yield — a ribbon click landing during a programmatic apply
   // (or a second click during a delete precheck) must wait its turn.
   const run = applyQueue.then(() => applyChangePlanNow(plan, ctx, options))
   applyQueue = run.then(

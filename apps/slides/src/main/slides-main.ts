@@ -387,7 +387,7 @@ async function handleRendererFreeze(wc: WebContents): Promise<void> {
 function trackSlidesWebContents(wc: WebContents): void {
   windowRefs.activeWebContents = wc
   wc.on('unresponsive', () => void handleRendererFreeze(wc))
-  // The AI panel opens links via window.open; route them to the system
+  // The side panel opens links via window.open; route them to the system
   // browser instead of spawning an in-app window with remote content.
   wc.setWindowOpenHandler(({ url }) => {
     const target = safeExternalUrl(url)
@@ -863,7 +863,7 @@ async function openAndBuild(
   }
 }
 
-/** Directory where AI-generated drafts are saved: the configurable default save folder (falls back to <Documents>/GenOffice) */
+/** Directory where generated drafts are saved: the configurable default save folder (falls back to <Documents>/GenOffice) */
 function getDraftsDir(): string {
   return configuredDefaultSaveDir(app)
 }
@@ -912,7 +912,7 @@ function journaledTxn(
 }
 
 /**
- * AI batch surface core, shared by the `slides:apply-txn` IPC handler and the
+ * batch surface core, shared by the `slides:apply-txn` IPC handler and the
  * shell's MCP slides bridge (one implementation so both stay behaviorally
  * identical): raw ops arrive as one transaction. The registry validates (guided
  * errors), the executor owns atomicity/rollback/journal; dry-run rehearses the
@@ -1111,7 +1111,7 @@ function syncAutofitScale(
   return rebuildSlide(session, slideIndex) ?? rendered
 }
 
-/** Legacy fixed color schemes (AI tools/old files still pass these keys; kept as fallback). */
+/** Legacy fixed color schemes (tools/old files still pass these keys; kept as fallback). */
 const CHART_COLOR_SCHEMES: Record<string, string[]> = {
   default: [],
   blue: ['#2E75B6', '#4472C4', '#5B9BD5', '#70AD47', '#ED7D31'],
@@ -1623,7 +1623,7 @@ export function registerSlidesIpc(): void {
     return r ? rebuildSlide(session, op.slideIndex) : null
   })
 
-  // AI batch surface: raw ops arrive as one transaction — the shared core in
+  // batch surface: raw ops arrive as one transaction — the shared core in
   // applySessionTxn (validation, atomicity/rollback/journal, autofit render pass)
   // is the same code the shell's MCP slides bridge drives.
   ipcMain.handle('slides:apply-txn', (e, req: ApplyTxnOp): ApplyTxnResult | null => {
@@ -2279,7 +2279,7 @@ export function registerSlidesIpc(): void {
     const session = sessions.get(e.sender.id)
     if (!session) return null
     const layouts = listSlideLayouts(session.opened.archive)
-    // Decks whose own layouts carry no placeholders (AI-generated single blank layout)
+    // Decks whose own layouts carry no placeholders (generated single blank layout)
     // get the built-in standard set, injected into the package on first use
     if (shouldOfferBuiltinLayouts(layouts)) {
       layouts.push(

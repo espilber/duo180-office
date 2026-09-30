@@ -296,17 +296,7 @@ export const it = {
   appSavedTwoPhase: 'Salvato.',
   appSaveSecondFailed:
     'La struttura è salvata, ma la seconda fase (tabelle pivot/tabelle/nomi definiti) non è riuscita: {reason}',
-  appReadyInitial: 'Pronto per un comando IA locale e deterministico.',
-  appAiThinking: "L'IA sta pensando…",
-  appAiDone: "L'IA ha terminato",
-  appAiTurnLimit:
-    '(Raggiunto il limite di chiamate agli strumenti per questa richiesta; la risposta sopra si basa su quanto letto finora e potrebbe essere incompleta.)',
-  appAiTruncatedNote:
-    '(La risposta è stata troncata dal limite di lunghezza e potrebbe essere incompleta.)',
-  appAiStopped: '(interrotto)',
-  appAiNoSummary: "L'IA ha terminato senza generare un riepilogo.",
-  appAiNoAction: "L'IA non ha eseguito alcuna azione né dato risposta. Riprova o riformula.",
-  appNewConversation: 'Nuova conversazione avviata.',
+  appReadyInitial: 'Pronto',
   appPivotCellNoEdit:
     'Questa cella fa parte di una tabella pivot — la modifica non è ancora supportata.',
   appAreaStreaming:
@@ -620,7 +610,6 @@ export const it = {
   appShowCommentsTitle: 'Fissa/sblocca il fumetto del commento della cella selezionata',
   appStructuralShiftBlocked:
     'Un grafico o una tabella in questo foglio è ancorato alle righe/colonne interessate; non possono spostarsi e la modifica strutturale non è stata salvata. Annullala (⌘Z) e salva di nuovo.',
-  appAiChangesNotSaved: 'Modifiche IA applicate (non salvate). Annulla con ⌘Z; salva con ⌘S.',
   appChartUpdated: 'Grafico aggiornato.',
   appChartNotEditable: 'Questo grafico non è modificabile.',
   appChartEditRecorded: 'Modifica del grafico registrata — salva con ⌘S.',
@@ -698,7 +687,6 @@ export const it = {
   appRibbonCollapse: 'Riduci a icona la barra multifunzione',
   appRibbonExpand: 'Espandi la barra multifunzione',
   appTabView: 'Visualizza',
-  appTabAi: 'IA',
   appTabChartDesign: 'Struttura grafico',
   appAutoSave: 'Salvataggio automatico',
   appAutoSaveTitle: 'Il salvataggio automatico è disponibile solo per i file nel cloud',
@@ -715,8 +703,6 @@ export const it = {
   appRevisionChip: 'Revisione {revision}',
   appOpenWorkbookTitle: 'Apri cartella di lavoro (⌘O)',
   appOpenXlsx: 'Apri XLSX',
-  appHideAi: 'Nascondi IA',
-  appShowAi: 'Mostra IA',
   appCategoryAxisTitle: 'Titolo asse delle categorie',
   appValueAxisTitle: 'Titolo asse dei valori',
   appTitleText: 'Testo del titolo',
@@ -787,10 +773,6 @@ export const it = {
   appFormatPaneDetail: 'Assi, distanza tra le barre, esplosione',
   appGroupChartActions: 'Azioni grafico',
   appRemoveFromSheet: 'Rimuovi dal foglio',
-  appGroupAiAssistant: 'Assistente IA',
-  appAiOpenPanelDetail: 'Barra laterale chat',
-  appGroupAiStarters: 'Avvio rapido',
-  appAiStarterDetail: 'Invia al pannello IA',
   appGroupTables: 'Tabelle',
   appFromSelection: 'Dalla selezione',
   appEditPivotTable: 'Modifica tabella pivot',
@@ -1250,11 +1232,6 @@ export const it = {
   appGroupProofing: 'Strumenti di correzione',
   appWorkbookStatsLabel: 'Statistiche cartella di lavoro',
   appSheetsCellsFormulas: 'Fogli, celle, formule',
-  appTranslate: 'Traduci',
-  appGroupLanguage: 'Lingua',
-  appTranslateTitle: "Traduci la selezione con l'IA",
-  appTranslatePrompt:
-    "Traduci il testo dell'intervallo selezionato in {language} e riscrivi le traduzioni nelle stesse celle.",
   appNewCommentDetail: 'Aggiungi o modifica',
   appDeleteLabel: 'Elimina',
   appNoteAtSelection: 'Nota in corrispondenza della selezione',

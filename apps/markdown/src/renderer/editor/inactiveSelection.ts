@@ -6,9 +6,9 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 const key = new PluginKey<boolean>('inactiveSelection')
 
 /**
- * Focusing the Ask-AI input relocates the DOM selection into the input, so the
+ * Focusing the Ask input relocates the DOM selection into the input, so the
  * document highlight vanishes even though the editor state still holds the
- * range the AI will act on. While a caller opts in, decorate the state
+ * range the caller will act on. While a caller opts in, decorate the state
  * selection so it stays visible (docs parity).
  */
 export const InactiveSelection = Extension.create({

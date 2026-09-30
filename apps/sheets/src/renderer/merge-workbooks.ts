@@ -314,7 +314,7 @@ export async function mergeWorkbooksIntoCurrent(deps: MergeWorkbooksDeps): Promi
   }
 }
 
-/** AI entry point: open explicit attachment paths and run the shared core. */
+/** Entry point: open explicit attachment paths and run the shared core. */
 export async function mergeAttachedWorkbooks(
   deps: MergeWorkbooksDeps,
   paths: string[],

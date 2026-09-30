@@ -183,7 +183,6 @@ export const zh = {
   ribbonReplaceTip: '查找并替换文字',
   ribbonSelectAll: '全选',
   ribbonSelectAllTip: '选择整个文档',
-  // Home · AI
   // Table Design
   ribbonRemoveTableStyleTip: '移除表格样式',
   ribbonNoStyle: '无样式',

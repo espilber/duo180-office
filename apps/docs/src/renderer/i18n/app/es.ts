@@ -52,8 +52,7 @@ export const es = {
   appFontsMissing: 'Faltan fuentes del documento: {names} (se muestran sustitutas)',
   appVerticalTextNotice:
     'Este documento contiene texto vertical (se muestra horizontal por ahora; el guardado no se ve afectado)',
-  appNewDocCreated:
-    'Documento en blanco creado. Describa el contenido que desea generar en el panel de IA de la izquierda',
+  appNewDocCreated: 'Documento en blanco creado.',
   appNewFailed: 'Error al crear el documento: {error}',
   appSaveFailed: 'Error al guardar: {error}',
   appAutoSavedAt: 'Guardado automáticamente ({time})',

@@ -88,7 +88,7 @@ export interface OpContext {
   selection?: { startIndex: number; endIndex: number; from?: number; to?: number } | null
   /** who issues the batch: the model (default) or the app's own UI (ribbon, shortcuts, dialogs) */
   source?: 'ai' | 'ui'
-  /** flag changed blocks with the yellow AI highlight (default: only for source 'ai') */
+  /** flag changed blocks with the yellow change highlight (default: only for source 'ai') */
   markAi?: boolean
   /** validate and plan only; nothing is dispatched */
   dryRun?: boolean
@@ -96,7 +96,7 @@ export interface OpContext {
   styles?: AiStyleAccess
 }
 
-/** the changed-block highlight belongs to AI edits only */
+/** the changed-block highlight belongs to programmatic edits only */
 const wantsAiMark = (ctx: OpContext): boolean => ctx.markAi ?? ctx.source !== 'ui'
 
 export interface OpResult {
@@ -496,7 +496,7 @@ const BOOL_MARK_TYPES: Record<string, string> = {
   strike: 'strike',
 }
 
-/** attrs for a block the op changed: the AI highlight rides along unless the caller opted out */
+/** attrs for a block the op changed: the change highlight rides along unless the caller opted out */
 function changedAttrs(ctx: OpContext, attrs: Record<string, unknown>): Record<string, unknown> {
   return wantsAiMark(ctx) ? { ...attrs, aiChanged: true } : attrs
 }
@@ -1356,7 +1356,7 @@ for (const def of styleOpDefs({
 
 // ---- entry point ----
 
-/** frozen scope -> current PM positions: exact positions when captured, else the block range (indexes clamped: AI edits earlier in the run may have shrunk the doc) */
+/** frozen scope -> current PM positions: exact positions when captured, else the block range (indexes clamped: programmatic edits earlier in the run may have shrunk the doc) */
 function frozenSelectionRange(editor: Editor, frozen: OpContext['selection']): SelRange | null {
   if (!frozen) return null
   if (frozen.from !== undefined && frozen.to !== undefined) {
@@ -1491,8 +1491,8 @@ export function executeOps(editor: Editor, ops: unknown, ctx: OpContext = {}): E
   if (tr.steps.length > 0) {
     // intent record for consumers downstream of the Step stream (journal, analytics)
     tr.setMeta('docsOps', { source: ctx.source ?? 'ai', ops: planned.map(([op]) => op.op) })
-    // route through the TrackChanges recorder so AI format/text edits become
-    // reviewable revisions under the AI author (same pipeline as manual edits)
+    // route through the TrackChanges recorder so programmatic format/text edits become
+    // reviewable revisions under the reviewer (same pipeline as manual edits)
     const storage = editor.storage.trackChanges as { enabled: boolean; author: string } | undefined
     if (ctx.track && storage) {
       const prev = { enabled: storage.enabled, author: storage.author }
@@ -1512,7 +1512,7 @@ export function executeOps(editor: Editor, ops: unknown, ctx: OpContext = {}): E
 }
 
 /**
- * The app's own UI (ribbon, shortcuts, dialogs) issues ops through here: no AI
+ * The app's own UI (ribbon, shortcuts, dialogs) issues ops through here: no
  * highlight, UI-only ops allowed, focus restored like a tiptap chain would.
  * Returns true when something changed. A validation failure is a programming
  * error in the caller, so it is logged rather than surfaced.

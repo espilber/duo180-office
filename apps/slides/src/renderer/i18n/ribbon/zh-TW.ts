@@ -1,9 +1,6 @@
 import type { zh } from './zh'
 
 export const zhTW = {
-  ribbonAiCreditNote: '將呼叫 AI 並消耗額度',
-  ribbonAiRewriteConfirm:
-    '此操作將呼叫 AI：會消耗額度，並可能改寫整篇內容。是否繼續？（確認後不再提示）',
   ribbonTabFile: '檔案',
   ribbonTabHome: '常用',
   ribbonTabInsert: '插入',
@@ -174,8 +171,6 @@ export const zhTW = {
   ribbonFlipH: '水平翻轉',
   ribbonFlipV: '垂直翻轉',
   ribbonDistributeHint: '{title}（需選取 ≥3 個元素）',
-  ribbonAiAssistant: 'Genspark',
-  ribbonAiAssistantTip: '開啟/收合 AI 助理面板',
   ribbonGroupTable: '表格',
   ribbonInsertTableTip: '插入表格（預設樣式，列欄可選）',
   ribbonTablePickerHint: '選擇列欄',
@@ -364,14 +359,6 @@ export const zhTW = {
     '排練計時：從頭放映並記錄每頁停留時間，結束後可儲存為自動換頁時間（寫入 pptx）',
   ribbonRecord: '錄製',
   ribbonGroupProofing: '校訂',
-  ribbonSpellCheck: '拼字檢查',
-  ribbonSpellCheckTip: 'AI 逐頁檢查錯別字、文法和標點並直接修正',
-  ribbonSpellCheckPrompt:
-    '逐頁檢查這份簡報的錯別字、文法和標點：有問題的用工具直接修正，保持版面與原意不變；最後依頁簡要回報修改點，沒有問題的頁跳過。',
-  ribbonTranslate: '翻譯',
-  ribbonTranslateTip: 'AI 把目前頁文字翻譯成所選語言（直接取代原文）',
-  ribbonTranslatePrompt:
-    '把目前頁的所有文字翻譯成{lang}：用工具直接取代原文，保持版面、字型大小和配色不變。',
   ribbonLangEnglish: '英文',
   ribbonLangSimplifiedChinese: '簡體中文',
   ribbonLangTraditionalChinese: '繁體中文',

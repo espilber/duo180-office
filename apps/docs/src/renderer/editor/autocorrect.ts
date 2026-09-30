@@ -3,7 +3,7 @@
  * automatic bulleted and numbered lists, (c) (r) (tm) ... fractions and
  * arrows, superscript ordinals and (opt-in) sentence capitalization.
  *
- * Only real typed text reaches handleTextInput, so paste, drop, AI edits and
+ * Only real typed text reaches handleTextInput, so paste, drop, programmatic edits and
  * IME composition never trigger a rule. Each correction records an undo entry
  * that one Backspace right afterwards reverts, as in Word.
  */

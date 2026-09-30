@@ -36,8 +36,7 @@ export const ms = {
   charCount: '{n} aksara',
   previewNeedsSave: 'Imej dan gaya relatif akan dipaparkan dalam pratonton selepas fail disimpan',
   inspectHint: 'Klik elemen dalam pratonton untuk memilih, klik dua kali untuk menyunting teks',
-  nodeDynamic:
-    'Elemen ini dicipta oleh skrip halaman dan tiada dalam sumber; sunting melalui sumber atau AI',
+  nodeDynamic: 'Elemen ini dicipta oleh skrip halaman dan tiada dalam sumber; sunting melalui sumber',
   nodeDynamicShort: 'dijana skrip',
   nodeDirty: 'Skrip halaman telah mengubah elemen ini; suntingan ke sumber mungkin ditindih skrip',
   nodeDirtyShort: 'diubah skrip',

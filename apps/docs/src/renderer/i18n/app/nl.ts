@@ -52,8 +52,7 @@ export const nl = {
   appFontsMissing: 'Ontbrekende documentlettertypen: {names} (vervangingen weergegeven)',
   appVerticalTextNotice:
     'Dit document bevat verticale tekst (voorlopig horizontaal weergegeven; opslaan wordt niet beïnvloed)',
-  appNewDocCreated:
-    'Leeg document gemaakt. Beschrijf in het AI-paneel links wat er gegenereerd moet worden.',
+  appNewDocCreated: 'Leeg document gemaakt.',
   appNewFailed: 'Document maken mislukt: {error}',
   appSaveFailed: 'Opslaan mislukt: {error}',
   appAutoSavedAt: 'Automatisch opgeslagen ({time})',

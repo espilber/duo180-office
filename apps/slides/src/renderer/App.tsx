@@ -396,7 +396,7 @@ export function App() {
   // ── Thumbnail sidebar width (drag the divider to resize; persisted) ─────────
   const [thumbsW, setThumbsW] = useState(loadThumbsW)
   const thumbsListRef = useRef<HTMLDivElement | null>(null)
-  // Re-clamp when the window shrinks (max is 40% of the window), like the AI panel
+  // Re-clamp when the window shrinks (max is 40% of the window), like the side panel
   useEffect(() => {
     const onResize = () => setThumbsW((w) => clampThumbsW(w))
     window.addEventListener('resize', onResize)
@@ -596,7 +596,7 @@ export function App() {
   const hasDoc = !!slide
 
   /// True when no slide carries real content (only master decorations and
-  /// untouched empty placeholders) — the ribbon's one-click AI actions grey out.
+  /// untouched empty placeholders) — the ribbon's one-click actions grey out.
   const deckEmpty = useMemo(() => {
     const nodesHaveContent = (nodes: RenderNode[]): boolean =>
       nodes.some((n) => {
@@ -982,7 +982,7 @@ export function App() {
     return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)
   }
 
-  // Text dragged in plain DOM (e.g. AI panel) focuses body; canvas shape selection stays collapsed
+  // Text dragged in plain DOM (e.g. side panel) focuses body; canvas shape selection stays collapsed
   const hasDomTextSelection = () => {
     const sel = window.getSelection()
     return !!sel && !sel.isCollapsed
@@ -1006,7 +1006,7 @@ export function App() {
   )
 
   const undo = useCallback(async () => {
-    // Preserve native undo while typing. The cleared AI composer explicitly yields to deck undo.
+    // Preserve native undo while typing. The cleared composer explicitly yields to deck undo.
     const target = document.activeElement as HTMLElement | null
     if (editing || (isTextUndoTarget(target) && !shouldRouteHistoryToDeck(target))) {
       document.execCommand('undo')
@@ -1163,7 +1163,7 @@ export function App() {
   }, [applyOpen])
 
   // Files are pushed open by the main process (double-click/command line); with no pending file the
-  // window lands directly in the editor on a fresh blank deck (the AI panel carries the generate-from-prompt flow).
+  // window lands directly in the editor on a fresh blank deck (the side panel carries the generate-from-prompt flow).
   // StrictMode runs the mount effect twice, but the pending queue can only be consumed once, so the
   // consume Promise is stored in a shared ref and its result is processed only once.
   useEffect(() => {
@@ -1287,7 +1287,7 @@ export function App() {
     setEditing(null)
     setDirty(true)
     // The deck is the new truth: drop an in-progress notes draft (same as undo) so a stale
-    // draft can't overwrite what the AI batch wrote via setNotes on the next flush, then
+    // draft can't overwrite what the batch wrote via setNotes on the next flush, then
     // re-fetch notes/comments, which aren't part of RenderSlide.
     notesDraftRef.current = null
     setAnnotationsNonce((n) => n + 1)

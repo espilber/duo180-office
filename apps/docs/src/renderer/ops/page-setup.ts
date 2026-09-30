@@ -83,7 +83,7 @@ const TWIPS_PER: Record<string, number> = {
 const LENGTH = /^\s*(-?\d+(?:\.\d+)?)\s*(twips?|pt|px|in|cm|mm)\s*$/i
 
 /** "2.54cm" / "1in" / "72pt" / 1440 (twips) → twips; undefined when unparseable */
-/** Largest magnitude accepted (~35in in twips): uncapped AI lengths break layout. */
+/** Largest magnitude accepted (~35in in twips): uncapped supplied lengths break layout. */
 const MAX_TWIPS = 50400
 
 function boundTwips(twips: number): number | undefined {

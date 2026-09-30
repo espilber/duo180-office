@@ -328,7 +328,7 @@ interface RibbonProps {
   showStylesPane?: boolean
   onShowStylesPane?: (v: boolean) => void
   commentCount: number
-  /** unresolved root comments (drives the AI resolve-comments action) */
+  /** unresolved root comments (drives the resolve-comments action) */
   openCommentCount: number
   resolvedCommentCount: number
   onShowComments: () => void
@@ -785,7 +785,7 @@ function RibbonInner({
     collapse: t('ribbonCollapse'),
     expand: t('ribbonExpand'),
   })
-  // The one-click AI actions need text to work on; grey them out on an empty document
+  // The one-click actions need text to work on; grey them out on an empty document
   const docEmpty = !hasDoc || fs.docEmpty
   const [tab, setTab] = useState<RibbonTab>('home')
   const [dropdown, setDropdown] = useState<string | null>(null)

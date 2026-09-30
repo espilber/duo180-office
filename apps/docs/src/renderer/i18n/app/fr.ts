@@ -52,7 +52,7 @@ export const fr = {
   appFontsMissing: 'Polices du document manquantes : {names} (polices de substitution affichées)',
   appVerticalTextNotice:
     "Ce document contient du texte vertical (affiché horizontalement pour l'instant ; l'enregistrement n'est pas affecté)",
-  appNewDocCreated: 'Document vierge créé. Décrivez le contenu à générer dans le volet IA à gauche',
+  appNewDocCreated: 'Document vierge créé.',
   appNewFailed: 'Échec de la création du document : {error}',
   appSaveFailed: "Échec de l'enregistrement : {error}",
   appAutoSavedAt: 'Enregistrement automatique ({time})',

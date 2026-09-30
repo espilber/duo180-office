@@ -3998,7 +3998,7 @@ export function setDocsShellHooks(hooks: DocsShellHooks | null): void {
   shellHooks = hooks
 }
 
-/** After writing an exported/AI-generated file: open it in the right tab
+/** After writing an exported/generated file: open it in the right tab
  * (shell) or reveal it in the folder (standalone). Tab-opening failure must
  * not report the write itself as failed — the file is already persisted. */
 function openGeneratedFile(path: string): void {
@@ -4020,7 +4020,7 @@ function sendCommand(command: MenuCommand, payload?: string): void {
 }
 
 /**
- * Per-tab View-menu toggle state (AI Sidebar / Dark Mode), reported by each
+ * Per-tab View-menu toggle state (Sidebar / Dark Mode), reported by each
  * renderer whenever it changes. The template can't hardcode `checked` — the
  * state lives in the renderer and differs per tab — so builds read the active
  * tab's last report, and reports from the active tab patch the built menu in
@@ -4726,7 +4726,7 @@ export function startDocsStandalone(): void {
   registerRendererScheme()
   installNavigationGuard(app)
   installContextMenu(app, () => contextMenuLabels(getUiLang()))
-  // dev runs must not share the packaged app's userData (recent files, AI settings)
+  // dev runs must not share the packaged app's userData (recent files, settings)
   // or its single-instance lock — otherwise `npm run dev` silently quits whenever
   // the installed GenOffice Docs is open and forwards its argv there instead.
   // AI_OFFICE_USER_DATA: E2E/screenshot runs isolate userData (and the

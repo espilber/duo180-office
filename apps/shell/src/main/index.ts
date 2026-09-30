@@ -151,6 +151,7 @@ import { convertPdfFileToDocxLocalWithPrompt, PdfLoadError } from './pdf2docx-lo
 import { convertPdfFileToPptxLocalWithPrompt } from './pdf2pptx-local'
 import { convertPdfFileToXlsxLocalWithPrompt } from './pdf2xlsx-local'
 import { closePdfPasswordDialog, promptPdfPassword } from './pdf-password-dialog'
+import { resolvePdfExportPath } from './pdf-export-path'
 import {
   configureMarkdownRuntime,
   exportMarkdownPdfHeadless,
@@ -4110,25 +4111,53 @@ async function savePdfAs(): Promise<void> {
 let exportingPdfDocx = false
 
 /**
+ * Report why a pdf export could not get a source path. A dismissed Save As dialog
+ * ('not-saved') is silent by design — nothing went wrong and the renderer's own
+ * save flow already reported any error; a successfully flushed document that still
+ * has no path, or no pdf tab at all, would otherwise fail without a trace.
+ */
+function notifyPdfExportPathFailure(reason: 'no-tab' | 'not-saved' | 'missing-path'): void {
+  if (reason !== 'missing-path') return
+  if (shellWindow && !shellWindow.isDestroyed()) {
+    void dialog.showMessageBox(shellWindow, {
+      type: 'warning',
+      message: tm('errPdfSaveAsFailed'),
+    })
+  }
+}
+
+/**
  * Export as Word for pdf tabs, fully local (pdf2docx P4): flush pending
  * edits, pick the destination, convert in-process via PDFium wasm, write the
- * file and open it in a Docs tab. No login, no credits.
+ * file and open it in a Docs tab.
  */
 async function exportPdfAsDocxLocal(): Promise<void> {
-  const tab = tabManager?.activePdfTab()
-  if (!tab?.filePath || !shellWindow) return
   if (exportingPdfDocx) {
-    void dialog.showMessageBox(shellWindow, {
-      type: 'info',
-      message: tm('pdfDocxBusyMsg'),
-    })
+    if (shellWindow) {
+      void dialog.showMessageBox(shellWindow, {
+        type: 'info',
+        message: tm('pdfDocxBusyMsg'),
+      })
+    }
     return
   }
+  const resolved = await resolvePdfExportPath({
+    activeTab: () => tabManager?.activePdfTab(),
+    flushSave: (t) => flushPdfSave(t.webContents),
+    // Re-read the file path of this same tab: the file-saved hook updated it during the flush.
+    currentPath: (t) => tabManager?.list().find((x) => x.id === t.id)?.filePath,
+  })
+  if (!resolved.ok) {
+    notifyPdfExportPathFailure(resolved.reason)
+    return
+  }
+  if (!shellWindow) return
+  const tab = resolved.tab
+  const pdfPath = resolved.path
   exportingPdfDocx = true
   try {
-    if (!(await flushPdfSave(tab.webContents))) return
     const picked = await showSaveDialogWithMemory(dialog, shellWindow, {
-      defaultPath: tab.filePath.replace(/\.pdf$/i, '.docx'),
+      defaultPath: pdfPath.replace(/\.pdf$/i, '.docx'),
       filters: [{ name: tm('filterWord'), extensions: ['docx'] }],
     })
     if (picked.canceled || !picked.filePath) return
@@ -4144,7 +4173,6 @@ async function exportPdfAsDocxLocal(): Promise<void> {
     shellWindow.setProgressBar(2)
     // encrypted PDFs prompt for the password (P23), looping on wrong entries;
     // null result = user cancelled the prompt → abort silently
-    const pdfPath = tab.filePath
     const result = await convertPdfFileToDocxLocalWithPrompt(
       pdfPath,
       (retry) =>
@@ -4249,25 +4277,37 @@ async function exportPdfAsDocxLocal(): Promise<void> {
 /**
  * Export as PowerPoint for pdf tabs, fully local (pdf2pptx P25): flush
  * pending edits, pick the destination, convert in-process via PDFium wasm,
- * write the file and open it in a Slides tab. No login, no credits. Shares
+ * write the file and open it in a Slides tab. Shares
  * the in-flight guard with the Word exports so pdfium never runs two
  * conversions at once.
  */
 async function exportPdfAsPptxLocal(): Promise<void> {
-  const tab = tabManager?.activePdfTab()
-  if (!tab?.filePath || !shellWindow) return
   if (exportingPdfDocx) {
-    void dialog.showMessageBox(shellWindow, {
-      type: 'info',
-      message: tm('pdfPptxBusyMsg'),
-    })
+    if (shellWindow) {
+      void dialog.showMessageBox(shellWindow, {
+        type: 'info',
+        message: tm('pdfPptxBusyMsg'),
+      })
+    }
     return
   }
+  const resolved = await resolvePdfExportPath({
+    activeTab: () => tabManager?.activePdfTab(),
+    flushSave: (t) => flushPdfSave(t.webContents),
+    // Re-read the file path of this same tab: the file-saved hook updated it during the flush.
+    currentPath: (t) => tabManager?.list().find((x) => x.id === t.id)?.filePath,
+  })
+  if (!resolved.ok) {
+    notifyPdfExportPathFailure(resolved.reason)
+    return
+  }
+  if (!shellWindow) return
+  const tab = resolved.tab
+  const pdfPath = resolved.path
   exportingPdfDocx = true
   try {
-    if (!(await flushPdfSave(tab.webContents))) return
     const picked = await showSaveDialogWithMemory(dialog, shellWindow, {
-      defaultPath: tab.filePath.replace(/\.pdf$/i, '.pptx'),
+      defaultPath: pdfPath.replace(/\.pdf$/i, '.pptx'),
       filters: [{ name: tm('filterPpt'), extensions: ['pptx'] }],
     })
     if (picked.canceled || !picked.filePath) return
@@ -4282,7 +4322,6 @@ async function exportPdfAsPptxLocal(): Promise<void> {
     shellWindow.setProgressBar(2)
     // encrypted PDFs prompt for the password (P23), looping on wrong entries;
     // null result = user cancelled the prompt → abort silently
-    const pdfPath = tab.filePath
     const result = await convertPdfFileToPptxLocalWithPrompt(
       pdfPath,
       (retry) =>
@@ -4359,25 +4398,37 @@ async function exportPdfAsPptxLocal(): Promise<void> {
 /**
  * Export as Excel for pdf tabs, fully local (pdf2xlsx P26): flush pending
  * edits, pick the destination, convert in-process via PDFium wasm, write the
- * file and open it in a Sheets tab. No login, no credits. Shares the
+ * file and open it in a Sheets tab. Shares the
  * in-flight guard with the Word/PowerPoint exports so pdfium never runs two
  * conversions at once.
  */
 async function exportPdfAsXlsxLocal(): Promise<void> {
-  const tab = tabManager?.activePdfTab()
-  if (!tab?.filePath || !shellWindow) return
   if (exportingPdfDocx) {
-    void dialog.showMessageBox(shellWindow, {
-      type: 'info',
-      message: tm('pdfXlsxBusyMsg'),
-    })
+    if (shellWindow) {
+      void dialog.showMessageBox(shellWindow, {
+        type: 'info',
+        message: tm('pdfXlsxBusyMsg'),
+      })
+    }
     return
   }
+  const resolved = await resolvePdfExportPath({
+    activeTab: () => tabManager?.activePdfTab(),
+    flushSave: (t) => flushPdfSave(t.webContents),
+    // Re-read the file path of this same tab: the file-saved hook updated it during the flush.
+    currentPath: (t) => tabManager?.list().find((x) => x.id === t.id)?.filePath,
+  })
+  if (!resolved.ok) {
+    notifyPdfExportPathFailure(resolved.reason)
+    return
+  }
+  if (!shellWindow) return
+  const tab = resolved.tab
+  const pdfPath = resolved.path
   exportingPdfDocx = true
   try {
-    if (!(await flushPdfSave(tab.webContents))) return
     const picked = await showSaveDialogWithMemory(dialog, shellWindow, {
-      defaultPath: tab.filePath.replace(/\.pdf$/i, '.xlsx'),
+      defaultPath: pdfPath.replace(/\.pdf$/i, '.xlsx'),
       filters: [{ name: tm('filterExcel'), extensions: ['xlsx'] }],
     })
     if (picked.canceled || !picked.filePath) return
@@ -4392,7 +4443,6 @@ async function exportPdfAsXlsxLocal(): Promise<void> {
     shellWindow.setProgressBar(2)
     // encrypted PDFs prompt for the password (P23), looping on wrong entries;
     // null result = user cancelled the prompt → abort silently
-    const pdfPath = tab.filePath
     const result = await convertPdfFileToXlsxLocalWithPrompt(
       pdfPath,
       (retry) =>
@@ -4517,7 +4567,7 @@ function installDockMenu(): void {
 
 // On mainland-China networks the main process's Node fetch (undici) bypasses the system proxy,
 // so direct calls to overseas APIs time out or get region-blocked (403).
-// (Removed with the AI/provider layer: the remaining main-process fetch is the
+// (The provider layer was removed: the remaining main-process fetch is the
 // GitHub stargazer count, answered fine without a dedicated dispatcher.)
 
 // ---- lifecycle (the shell is the only owner) ----

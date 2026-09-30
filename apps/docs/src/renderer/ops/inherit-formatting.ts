@@ -1,5 +1,5 @@
 /**
- * Formatting inheritance for AI rewrites (replace_blocks).
+ * Formatting inheritance for programmatic rewrites (replace_blocks).
  *
  * The restricted HTML the model writes carries no font/size/indent/spacing,
  * column widths, borders or cell shading — and the model never saw them, the
@@ -20,7 +20,7 @@ const hasDelMark = (node: ProseMirrorNode) => node.marks.some((m) => m.type.name
  * docxIndex rides along so the save path treats the rewrite as an in-place
  * edit of the original paragraph and reuses its raw pPr bytes (numbering,
  * section breaks, keepNext…), exactly like retyping the text by hand.
- * Revision state, bookmarks and comment anchors stay out: the AI's own
+ * Revision state, bookmarks and comment anchors stay out: the caller's own
  * ins/del handling owns the former, and the latter are text-range anchors.
  */
 const INHERITED_PARA_ATTRS = [

@@ -52,7 +52,7 @@ export const en = {
   appFontsMissing: 'Missing document fonts: {names} (substitutes shown)',
   appVerticalTextNotice:
     'This document contains vertical text (shown horizontally for now; saving is unaffected)',
-  appNewDocCreated: 'Blank document created. Describe what to generate in the AI pane on the left.',
+  appNewDocCreated: 'Blank document created.',
   appNewFailed: 'Failed to create document: {error}',
   appSaveFailed: 'Save failed: {error}',
   appAutoSavedAt: 'AutoSaved ({time})',

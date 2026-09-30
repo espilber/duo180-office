@@ -171,7 +171,7 @@ export function submitNewComment(ctx: ReviewContext, text: string): void {
   ctx.setStatus(t('appCommentAdded'))
 }
 
-/** New thread on an explicit range (AI add_comment); the new id, null when the range holds no text */
+/** New thread on an explicit range (the add_comment op); the new id, null when the range holds no text */
 export function addCommentAt(
   ctx: ReviewContext,
   range: { from: number; to: number },

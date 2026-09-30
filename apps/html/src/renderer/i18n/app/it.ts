@@ -39,8 +39,7 @@ export const it = {
     "Immagini e stili relativi compaiono nell'anteprima dopo il salvataggio del file",
   inspectHint:
     "Fai clic su un elemento nell'anteprima per selezionarlo, doppio clic per modificare il testo",
-  nodeDynamic:
-    "Questo elemento è stato creato dallo script della pagina e non esiste nel sorgente; modificalo dal sorgente o con l'IA",
+  nodeDynamic: 'Questo elemento è stato creato dallo script della pagina e non esiste nel sorgente; modificalo dal sorgente',
   nodeDynamicShort: 'generato da script',
   nodeDirty:
     'Lo script della pagina ha modificato questo elemento; le modifiche nel sorgente potrebbero essere sovrascritte',

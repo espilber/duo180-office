@@ -278,17 +278,7 @@ export const id = {
   appSavedTwoPhase: 'Disimpan.',
   appSaveSecondFailed:
     'Struktur sudah tersimpan, tetapi fase kedua (PivotTable/tabel/nama yang ditentukan) gagal: {reason}',
-  appReadyInitial: 'Siap untuk perintah AI lokal yang deterministik.',
-  appAiThinking: 'AI sedang berpikir…',
-  appAiDone: 'AI selesai',
-  appAiTurnLimit:
-    '(Batas putaran panggilan alat untuk permintaan ini tercapai; jawaban di atas berdasarkan yang sudah dibaca dan mungkin tidak lengkap.)',
-  appAiTruncatedNote: '(Balasan terpotong karena batas panjang dan mungkin tidak lengkap.)',
-  appAiStopped: '(dihentikan)',
-  appAiNoSummary: 'AI selesai tanpa menghasilkan ringkasan.',
-  appAiNoAction:
-    'AI tidak melakukan tindakan apa pun dan tidak memberi balasan. Coba lagi atau ubah kalimatnya.',
-  appNewConversation: 'Percakapan baru dimulai.',
+  appReadyInitial: 'Siap',
   appPivotCellNoEdit: 'Sel ini bagian dari PivotTable — pengeditannya belum didukung.',
   appAreaStreaming: 'Area itu masih dimuat secara streaming — coba lagi sebentar lagi.',
   appFormulaRecordedPartial:
@@ -587,8 +577,6 @@ export const id = {
   appShowCommentsTitle: 'Sematkan/lepas sematan balon komentar sel yang dipilih',
   appStructuralShiftBlocked:
     'Bagan atau tabel di sheet ini tertaut ke baris/kolom yang terdampak sehingga tidak bisa digeser; perubahan struktur tidak disimpan. Urungkan (⌘Z) lalu simpan lagi.',
-  appAiChangesNotSaved:
-    'Perubahan AI diterapkan (belum disimpan). Urungkan dengan ⌘Z; simpan dengan ⌘S.',
   appChartUpdated: 'Bagan diperbarui.',
   appChartNotEditable: 'Bagan ini tidak dapat diedit.',
   appChartEditRecorded: 'Pengeditan bagan direkam — simpan dengan ⌘S.',
@@ -662,7 +650,6 @@ export const id = {
   appRibbonCollapse: 'Ciutkan Pita',
   appRibbonExpand: 'Perluas Pita',
   appTabView: 'Tampilan',
-  appTabAi: 'AI',
   appTabChartDesign: 'Desain Bagan',
   appAutoSave: 'SimpanOtomatis',
   appAutoSaveTitle: 'SimpanOtomatis hanya tersedia untuk file cloud',
@@ -679,8 +666,6 @@ export const id = {
   appRevisionChip: 'Revisi {revision}',
   appOpenWorkbookTitle: 'Buka Buku Kerja (⌘O)',
   appOpenXlsx: 'Buka XLSX',
-  appHideAi: 'Sembunyikan AI',
-  appShowAi: 'Tampilkan AI',
   appCategoryAxisTitle: 'Judul Sumbu Kategori',
   appValueAxisTitle: 'Judul Sumbu Nilai',
   appTitleText: 'Teks judul',
@@ -750,10 +735,6 @@ export const id = {
   appFormatPaneDetail: 'Sumbu, lebar celah, pemisahan',
   appGroupChartActions: 'Tindakan bagan',
   appRemoveFromSheet: 'Hapus dari lembar',
-  appGroupAiAssistant: 'Asisten AI',
-  appAiOpenPanelDetail: 'Bilah samping obrolan',
-  appGroupAiStarters: 'Mulai cepat',
-  appAiStarterDetail: 'Kirim ke panel AI',
   appGroupTables: 'Tabel',
   appFromSelection: 'Dari pilihan',
   appEditPivotTable: 'Edit PivotTable',
@@ -1212,11 +1193,6 @@ export const id = {
   appGroupProofing: 'Pemeriksaan',
   appWorkbookStatsLabel: 'Statistik Buku Kerja',
   appSheetsCellsFormulas: 'Lembar, sel, rumus',
-  appTranslate: 'Terjemahkan',
-  appGroupLanguage: 'Bahasa',
-  appTranslateTitle: 'Terjemahkan pilihan dengan AI',
-  appTranslatePrompt:
-    'Terjemahkan teks dalam rentang terpilih ke {language} dan tulis kembali ke sel yang sama.',
   appNewCommentDetail: 'Tambah atau edit',
   appDeleteLabel: 'Hapus',
   appNoteAtSelection: 'Catatan pada pilihan',

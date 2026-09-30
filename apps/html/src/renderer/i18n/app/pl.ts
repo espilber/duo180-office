@@ -36,8 +36,7 @@ export const pl = {
   charCount: '{n} zn.',
   previewNeedsSave: 'Względne obrazy i style pojawią się w podglądzie po zapisaniu pliku',
   inspectHint: 'Kliknij element w podglądzie, aby go zaznaczyć; dwukrotne kliknięcie edytuje tekst',
-  nodeDynamic:
-    'Ten element został utworzony przez skrypt strony i nie istnieje w źródle; edytuj przez źródło lub AI',
+  nodeDynamic: 'Ten element został utworzony przez skrypt strony i nie istnieje w źródle; edytuj przez źródło',
   nodeDynamicShort: 'wygenerowany skryptem',
   nodeDirty: 'Skrypt strony zmienił ten element; zmiany zapisane w źródle mogą zostać nadpisane',
   nodeDirtyShort: 'zmieniony skryptem',

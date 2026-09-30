@@ -9,7 +9,7 @@ import { PDF_PASSWORD_CHANNELS } from '../shared/pdf-password-api'
  * promptPdfPassword() call resolves with one attempt (the entered password,
  * or null when the user cancels / closes the window). The window survives
  * across attempts — a rejected password re-prompts in place via pushed state
- * — and the caller closes it with closePdfPasswordDialog() when the retry
+ * — and the programmatic path closes it with closePdfPasswordDialog() when the retry
  * loop ends (success, cancel or unrelated failure).
  */
 

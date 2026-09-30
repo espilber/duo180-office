@@ -4,7 +4,7 @@ import type { PmNode } from './convert'
 
 /**
  * Protected display-equation block built from LaTeX (throws on syntax outside
- * the supported subset). Shared by the insert dialog/gallery and the AI
+ * the supported subset). Shared by the insert dialog/gallery and the programmatic path
  * <formula> tag; genXml carries the OMML through the save path.
  */
 /** MathML for inline flow (ommlToMathML emits display="block" for equations) */

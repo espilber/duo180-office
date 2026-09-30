@@ -49,7 +49,7 @@ export const he = {
     'מסמך גדול ({blocks} פסקאות): בדיקת האיות בזמן ההקלדה כבויה — ניתן להפעיל אותה תחת סקירה › איות',
   appFontsMissing: 'גופני המסמך חסרים: {names} (מוצגים גופנים חלופיים)',
   appVerticalTextNotice: 'המסמך מכיל טקסט אנכי (מוצג אופקית בינתיים; השמירה אינה מושפעת)',
-  appNewDocCreated: 'נוצר מסמך ריק. תארו בחלונית ה-AI משמאל מה ליצור.',
+  appNewDocCreated: 'נוצר מסמך ריק.',
   appNewFailed: 'יצירת המסמך נכשלה: {error}',
   appSaveFailed: 'השמירה נכשלה: {error}',
   appAutoSavedAt: 'נשמר אוטומטית ({time})',

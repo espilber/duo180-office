@@ -1488,7 +1488,7 @@ export function IconDoc(props: IconProps) {
   )
 }
 
-/* ---------- AI panel ---------- */
+/* ---------- side panel ---------- */
 
 export function IconSend(props: IconProps) {
   return (
@@ -1516,7 +1516,7 @@ export function IconGear(props: IconProps) {
   )
 }
 
-/** collapse the left-docked AI panel: sheets-parity glyph (16-canvas, 1.2/1.3 stroke),
+/** collapse the left-docked side panel: sheets-parity glyph (16-canvas, 1.2/1.3 stroke),
  *  self-contained so the shared Svg wrapper's pinned stroke doesn't alter its weight */
 export function IconSidebarCollapse({ size = 20 }: IconProps) {
   return (

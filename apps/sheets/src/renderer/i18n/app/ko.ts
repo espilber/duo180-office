@@ -278,18 +278,7 @@ export const ko = {
   appSavedTwoPhase: '저장했습니다.',
   appSaveSecondFailed:
     '구조는 저장되었지만 두 번째 단계(피벗 테이블/표/이름 범위)가 실패했습니다: {reason}',
-  // AI session / status bar
-  appReadyInitial: '준비 완료 — 로컬 결정적 AI 명령을 사용할 수 있습니다.',
-  appAiThinking: 'AI가 생각하는 중…',
-  appAiDone: 'AI가 완료되었습니다',
-  appAiTurnLimit:
-    '(요청당 도구 호출 한도에 도달하여, 지금까지 읽은 정보를 기반으로 한 답변입니다. 불완전할 수 있습니다.)',
-  appAiTruncatedNote: '(응답이 길이 제한으로 잘려 내용이 불완전할 수 있습니다.)',
-  appAiStopped: '(중지됨)',
-  appAiNoSummary: 'AI가 완료되었지만 요약은 생성되지 않았습니다.',
-  appAiNoAction:
-    'AI가 아무 작업도 수행하지 않았고 응답도 없습니다. 다시 시도하거나 다르게 표현해 보세요.',
-  appNewConversation: '새 대화를 시작했습니다.',
+  appReadyInitial: '준비 완료',
   // Streaming load / edit gating
   appPivotCellNoEdit: '이 셀은 피벗 테이블에 속해 있어 아직 편집할 수 없습니다.',
   appAreaStreaming: '이 영역은 아직 스트리밍 로드 중입니다 — 잠시 후 다시 시도하십시오.',
@@ -594,8 +583,6 @@ export const ko = {
   appShowCommentsTitle: '선택한 셀의 메모 풍선 고정/고정 해제',
   appStructuralShiftBlocked:
     '이 시트의 차트나 표가 해당 행/열에 고정되어 있어 이동할 수 없으며, 구조 변경은 저장되지 않았습니다. 실행 취소(⌘Z) 후 다시 저장하세요.',
-  appAiChangesNotSaved:
-    'AI 변경 사항이 적용되었습니다(저장 안 됨). ⌘Z로 실행 취소, ⌘S로 파일에 저장하세요.',
   // Floating objects / chart editing
   appChartUpdated: '차트를 업데이트했습니다.',
   appChartNotEditable: '이 차트는 편집할 수 없습니다.',
@@ -672,7 +659,6 @@ export const ko = {
   appRibbonCollapse: '리본 축소',
   appRibbonExpand: '리본 확장',
   appTabView: '보기',
-  appTabAi: 'AI',
   appTabChartDesign: '차트 디자인',
   // Title bar / status
   appAutoSave: '자동 저장',
@@ -690,8 +676,6 @@ export const ko = {
   appRevisionChip: '리비전 {revision}',
   appOpenWorkbookTitle: '통합 문서 열기(⌘O)',
   appOpenXlsx: 'XLSX 열기',
-  appHideAi: 'AI 숨기기',
-  appShowAi: 'AI 표시',
   // Chart text dialog
   appCategoryAxisTitle: '항목 축 제목',
   appValueAxisTitle: '값 축 제목',
@@ -767,11 +751,6 @@ export const ko = {
   appFormatPaneDetail: '축, 간격 너비, 조각 분리',
   appGroupChartActions: '차트 작업',
   appRemoveFromSheet: '시트에서 제거',
-  // AI Tab
-  appGroupAiAssistant: 'AI 도우미',
-  appAiOpenPanelDetail: '사이드바 대화',
-  appGroupAiStarters: '빠른 시작',
-  appAiStarterDetail: 'AI 패널로 보내기',
   // Insert tab
   appGroupTables: '표',
   appFromSelection: '현재 선택 영역 기준',
@@ -1234,10 +1213,6 @@ export const ko = {
   appGroupProofing: '언어 교정',
   appWorkbookStatsLabel: '통합 문서 통계',
   appSheetsCellsFormulas: '시트, 셀, 수식',
-  appTranslate: '번역',
-  appGroupLanguage: '언어',
-  appTranslateTitle: 'AI로 선택 영역 번역',
-  appTranslatePrompt: '선택한 범위의 텍스트를 {language}로 번역하여 원래 셀에 다시 써 주세요.',
   appNewCommentDetail: '추가 또는 편집',
   appDeleteLabel: '삭제',
   appNoteAtSelection: '선택 위치의 노트',

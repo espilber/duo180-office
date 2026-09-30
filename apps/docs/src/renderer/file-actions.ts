@@ -189,10 +189,10 @@ export interface FileActionContext {
   watermarkDirty: boolean
   setWatermark: (value: string | null) => void
   setWatermarkDirty: (dirty: boolean) => void
-  /** face/color/layout of an AI-set watermark (null = Word's default look); text lives in `watermark` */
+  /** face/color/layout of a stored watermark (null = Word's default look); text lives in `watermark` */
   watermarkStyle: Omit<WatermarkSpec, 'text'> | null
   setWatermarkStyle: (value: Omit<WatermarkSpec, 'text'> | null) => void
-  /** pending picture watermark (AI-set); replaces any text watermark on save */
+  /** pending picture watermark (stored); replaces any text watermark on save */
   watermarkPicture: PictureWatermarkSpec | null
   setWatermarkPicture: (value: PictureWatermarkSpec | null) => void
   inkAnnotations: InkAnnotation[]
@@ -312,7 +312,7 @@ function applyDocLayoutSettings(editor: Editor, parsed: ParsedDocFull): void {
  */
 export type LoadFileOutcome = 'ok' | 'canceled' | 'password' | 'failed' | 'superseded'
 
-/** appends a streamed tail chunk at the document end, outside undo history and the AI freshness baseline */
+/** appends a streamed tail chunk at the document end, outside undo history and the freshness baseline */
 export function appendStreamedNodes(editor: Editor, nodes: PmNode[]): void {
   const before = editor.state.doc
   const tr = editor.state.tr.insert(
@@ -361,7 +361,7 @@ function phasedHostFor(ctx: FileActionContext): PhasedContentHost {
 /** Word parity: a freshly opened or created document starts with the caret at
  *  its beginning — typing must work without a click into the page.
  *  Skipped when something else in this webContents already holds keyboard
- *  focus (e.g. the user clicked into the AI composer while the file parsed). */
+ *  focus (e.g. the user clicked into the composer while the file parsed). */
 function focusDocumentStart(editor: Editor): void {
   const startedAt = performance.now()
   const attempt = (): void => {
@@ -543,7 +543,7 @@ async function systemLocale(): Promise<string> {
   }
 }
 
-/** new document from the built-in blank template (AI can then generate into it) */
+/** new document from the built-in blank template (content can then be generated into it) */
 export async function newFile(ctx: FileActionContext): Promise<boolean | undefined> {
   if (!ctx.editor) return
   const generation = ++openGeneration

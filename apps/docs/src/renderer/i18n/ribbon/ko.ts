@@ -184,7 +184,6 @@ export const ko = {
   ribbonReplaceTip: '텍스트 찾아 바꾸기',
   ribbonSelectAll: '모두 선택',
   ribbonSelectAllTip: '문서 전체 선택',
-  // Home · AI
   // Table Design
   ribbonRemoveTableStyleTip: '표 스타일 제거',
   ribbonNoStyle: '스타일 없음',

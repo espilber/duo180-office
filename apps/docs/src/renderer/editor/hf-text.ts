@@ -1,6 +1,6 @@
 /**
  * Plain-text view of a header/footer part, shared by the on-canvas editing
- * surface and the AI set_header_footer tool: paragraphs edit as lines, the
+ * surface and the set_header_footer tool: paragraphs edit as lines, the
  * invisible PAGE / NUMPAGES field sentinels as visible {PAGE} / {NUMPAGES}
  * tokens. Layout-table rows (cells) and images stay out of the text flow and
  * keep their original content.

@@ -1,9 +1,6 @@
 import type { zh } from './zh'
 
 export const ja = {
-  ribbonAiCreditNote: 'AI を呼び出し、クレジットを消費します',
-  ribbonAiRewriteConfirm:
-    'この操作は AI を呼び出します。クレジットを消費し、内容全体が書き換えられる可能性があります。続行しますか？（確認後は再表示されません）',
   // tabs
   ribbonTabFile: 'ファイル',
   ribbonTabHome: 'ホーム',
@@ -166,7 +163,6 @@ export const ja = {
   ribbonLineSpacing: '行間',
   ribbonSpaceBefore: '段落前 (pt)',
   ribbonSpaceAfter: '段落後 (pt)',
-  // Home: panes / arrange / AI
   ribbonGroupPanes: 'ウィンドウ',
   ribbonFormatPane: '書式ウィンドウ',
   ribbonFormatPaneTip: '書式ウィンドウの表示/非表示（選択した要素の位置・サイズ・塗りつぶし）',
@@ -183,8 +179,6 @@ export const ja = {
   ribbonFlipH: '左右反転',
   ribbonFlipV: '上下反転',
   ribbonDistributeHint: '{title}（3 つ以上の要素を選択）',
-  ribbonAiAssistant: 'Genspark',
-  ribbonAiAssistantTip: 'AI アシスタントパネルの表示/非表示',
   // Insert
   ribbonGroupTable: '表',
   ribbonInsertTableTip: '表の挿入（既定のスタイル、行数と列数を選択可能）',
@@ -396,14 +390,6 @@ export const ja = {
   ribbonRecord: '記録',
   // Review
   ribbonGroupProofing: '文章校正',
-  ribbonSpellCheck: 'スペルチェック',
-  ribbonSpellCheckTip: 'AI がスライドごとに誤字・文法・句読点をチェックして直接修正',
-  ribbonSpellCheckPrompt:
-    'このプレゼンテーションをスライドごとに誤字・文法・句読点の観点でチェックしてください。問題のある箇所はツールで直接修正し、レイアウトと元の意味は変えないこと。最後にスライドごとに修正点を簡潔に報告し、問題のないスライドはスキップしてください。',
-  ribbonTranslate: '翻訳',
-  ribbonTranslateTip: 'AI が現在のスライドのテキストを選択した言語に翻訳（原文を直接置き換え）',
-  ribbonTranslatePrompt:
-    '現在のスライドのすべてのテキストを{lang}に翻訳してください。ツールで原文を直接置き換え、レイアウト・フォントサイズ・配色は変えないこと。',
   ribbonLangEnglish: '英語',
   ribbonLangSimplifiedChinese: '簡体字中国語',
   ribbonLangTraditionalChinese: '繁体字中国語',

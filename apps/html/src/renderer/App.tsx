@@ -325,7 +325,7 @@ export default function App() {
     localStorage.setItem('htmlapp.stylePanel', panelOpen ? '1' : '0')
   }, [panelOpen])
 
-  // the device host is centred in the stage: any stage resize (split view, AI dock, device) moves it
+  // the device host is centred in the stage: any stage resize (split view, side dock, device) moves it
   useEffect(() => {
     const stage = stageRef.current
     if (!stage || status !== 'ready') return
@@ -470,7 +470,7 @@ export default function App() {
     [applyOps, getMap, flushPending, pushPreview],
   )
 
-  // ── selection model: one current element shared by the preview, the source pane, the toolbar and the AI ──
+  // ── selection model: one current element shared by the preview, the source pane, the toolbar ──
 
   const selectSidRef = useRef<
     | ((

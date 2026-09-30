@@ -299,7 +299,7 @@ export function validateOps(raw: unknown): { ops: MdOp[] } | { error: string } {
   return { ops }
 }
 
-/** true when any op addresses blocks by index (the AI staleness guard applies) */
+/** true when any op addresses blocks by index (the staleness guard applies) */
 export function usesBlockIndexes(ops: MdOp[]): boolean {
   return ops.some(
     (op) =>

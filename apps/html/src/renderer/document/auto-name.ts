@@ -38,7 +38,7 @@ export function derivePageTitleName(html: string): string {
   return title.length >= MIN_TITLE_NAME && title.length <= MAX_TITLE_NAME ? title : ''
 }
 
-/** File name for an AI-generated untitled document: <title>, else the first <h1>, else the first words of the body */
+/** File name for a generated untitled document: <title>, else the first <h1>, else the first words of the body */
 export function deriveAutoFileName(html: string): string {
   const title = textOf(html, 'title') || textOf(html, 'h1')
   if (title) return title.slice(0, 60)

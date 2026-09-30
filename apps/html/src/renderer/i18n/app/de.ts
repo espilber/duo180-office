@@ -38,8 +38,7 @@ export const de = {
   previewNeedsSave:
     'Relative Bilder und Stile erscheinen in der Vorschau, sobald die Datei gespeichert ist',
   inspectHint: 'Element in der Vorschau anklicken zum Auswählen, Doppelklick zum Textbearbeiten',
-  nodeDynamic:
-    'Dieses Element wurde vom Seitenskript erzeugt und existiert nicht im Quelltext; über Quelltext oder KI bearbeiten',
+  nodeDynamic: 'Dieses Element wurde vom Seitenskript erzeugt und existiert nicht im Quelltext; über den Quelltext bearbeiten',
   nodeDynamicShort: 'skriptgeneriert',
   nodeDirty:
     'Das Seitenskript hat dieses Element verändert; in den Quelltext geschriebene Änderungen können überschrieben werden',

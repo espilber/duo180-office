@@ -845,7 +845,7 @@ export function App() {
   const headerAreaView = areaView('header')
   const footerAreaView = areaView('footer')
 
-  /** the AI header/footer tool edits the strip the matching edge area shows */
+  /** the header/footer tool edits the strip the matching edge area shows */
   const commitHf = (kind: 'header' | 'footer', next: HeaderFooter, viewOverride?: HfView) => {
     commitHfAt(
       kind === 'header' ? 0 : lastSectionIdx,
@@ -1334,7 +1334,7 @@ export function App() {
     },
   })
 
-  // every header/footer consumer (strips, gaps, heights, preview, AI, save) reads
+  // every header/footer consumer (strips, gaps, heights, preview, save) reads
   // through one resolver, so pending edits, Link to Previous and inheritance agree
   // the section list as Word sees it right now: a deleted break paragraph merges its
   // section into the next, pending breaks are already in `sections`. Derived from the
@@ -1399,7 +1399,7 @@ export function App() {
     const target = hfCommitTarget(hfState, si, kind, variant, ownerAtOpen)
     if (!target) return false
     // functional: two commits in one turn (Remove Page Numbers on both strips, an
-    // editor exit racing an AI set) must both land
+    // editor exit racing a programmatic set) must both land
     setSectionHfEdits((m) => ({ ...m, [target.key]: next }))
     return true
   }
@@ -2063,7 +2063,7 @@ export function App() {
         bootHandledRef.current = true
         // A failed open (corrupt file etc.) falls back to a blank document —
         // otherwise the tab shows "Opening…" forever with only a status-bar
-        // line explaining why (github.com/genspark-ai/genoffice issue #102).
+        // line explaining why (issue #102).
         // 'password': the prompt is up; its cancel path lands on blank instead.
         const outcome = pending ? await loadFile(pending) : 'canceled'
         if (outcome === 'canceled') await resetFile()
@@ -2088,7 +2088,7 @@ export function App() {
     [commitOpenedFile],
   )
 
-  /** new document from the built-in blank template (AI can then generate into it) */
+  /** new document from the built-in blank template (content can then be generated into it) */
   const newFile = useCallback(
     () => runGuardedDocumentAction(() => window.desktop.confirmDocumentReplace(), resetFile),
     [resetFile],
@@ -2207,7 +2207,7 @@ export function App() {
    * original current section sectPr's) w:type.
    */
   /**
-   * A section's sectPr as save would write it now: unsaved Layout-tab / AI edits
+   * A section's sectPr as save would write it now: unsaved Layout-tab / programmatic edits
    * applied on top of the parsed XML (a break copies this, not the stale file bytes).
    */
   const effectiveSectPrXml = (idx: number): string | null => {
@@ -2233,13 +2233,13 @@ export function App() {
     (
       type: SectionInfo['startType'],
       afterBlockIndex?: number,
-      // the AI tool's own section mirror (fresh between renders) and the sectPr copy it chose
+      // the tool's own section mirror (fresh between renders) and the sectPr copy it chose
       ai?: { sectPr: string; sections: SectionInfo[] },
     ) => {
       if (!editor || !doc) return
       const pmDoc = editor.state.doc
       const live = ai?.sections ?? sections
-      // an explicit block (AI tool) targets that block's section instead of the cursor's
+      // an explicit block (tool) targets that block's section instead of the cursor's
       const targetSection =
         afterBlockIndex === undefined
           ? activeSection
@@ -2722,7 +2722,7 @@ export function App() {
     setFootnotes,
     setEndnotes,
     setNotesDirty,
-    // a getter into the live mirror, not a render-time reference: AI tool
+    // a getter into the live mirror, not a render-time reference: tool
     // calls run several review actions between renders, and each one must
     // see the previous write (setComments replaces the array)
     get comments() {
@@ -2847,7 +2847,7 @@ export function App() {
     [fitZoomFor],
   )
 
-  // On scroller size changes (window/AI-dock/nav-pane toggles): follow with a
+  // On scroller size changes (window/side-dock/nav-pane toggles): follow with a
   // re-fit while in fit mode, and clamp any manual zoom back down to width-fit
   // whenever the page no longer fits horizontally — the canvas must never
   // overflow the pane on a resize (same contract as the slides stage). A manual
@@ -5051,7 +5051,7 @@ export function App() {
   useEffect(() => {
     // editing shortcuts only fire when focus is in an editor surface (main
     // ProseMirror, textbox sub-editor, in-place table cell) or nowhere at all —
-    // never while typing in the find box, AI input or other form fields
+    // never while typing in the find box, input or other form fields
     const focusInEditor = () => {
       const el = document.activeElement
       if (!el || el === document.body) return true
@@ -5849,7 +5849,7 @@ export function App() {
     }
   }, [editor, openRecent, save, status, exportPdf, exportHtml])
 
-  // Pending style definitions (Styles pane / AI define_style) show before the
+  // Pending style definitions (Styles pane / define_style) show before the
   // save writes them: styles.xml is re-resolved with the patches applied and
   // the live map feeds the gallery, the pane, the format state and the doc CSS.
   const [liveStyles, setLiveStyles] = useState<{

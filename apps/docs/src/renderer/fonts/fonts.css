@@ -176,13 +176,6 @@
   font-style: normal;
   font-display: block;
 }
-
-/* Chromium never system-falls-back for Private Use codepoints: unmapped PUA
- * renders the chain's primary font's .notdef. Chains headed by a real face
- * (Calibri, Carlito GO) draw tofu boxes for AI-residue PUA tokens, while Word
- * and subset-headed chains (blank subsetted .notdef) show nothing. This tiny
- * generated font (tools/build-pua-blank-font.py) maps all of U+E000-F8FF to a
- * blank 1em glyph so PUA stays invisible in the chains that carry it. */
 @font-face {
   font-family: 'GenOffice PUA Blank';
   src: url('./GenOfficePUABlank.woff2') format('woff2');
@@ -1911,3 +1904,4 @@
   font-style: normal;
   font-display: block;
 }
+

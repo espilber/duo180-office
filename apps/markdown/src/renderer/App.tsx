@@ -302,7 +302,7 @@ export default function App() {
     savingRef.current = true
     setSaveState('saving')
     try {
-      // edits landing while the write is in flight (AI streaming, fast typing)
+      // edits landing while the write is in flight (streaming edits, fast typing)
       // must keep the document dirty — compare doc identity after the await
       const docAtSave = current.state.doc
       const fmAtSave = envelopeRef.current.frontmatter

@@ -147,7 +147,7 @@ import { constrainTableWidthAtCell } from './table-sizing'
 /**
  * Custom schema mirroring the docx-engine Block model 1:1.
  * Every top-level node carries `docxIndex` (patch anchor, null = new) and
- * `aiChanged` (diff highlighting for AI edits).
+ * `aiChanged` (diff highlighting for programmatic edits).
  */
 
 import {
@@ -1184,7 +1184,7 @@ export const DocInlineMath = Node.create({
       omml: { default: '' },
       mathml: { default: '' },
       latex: { default: null as string | null },
-      /** flat token strip (word count / AI read fallback) */
+      /** flat token strip (word count / bulk read fallback) */
       text: { default: '' },
     }
   },
@@ -5593,7 +5593,7 @@ function mountTextboxEditors(
     )
   }
 
-  /** external model change (undo of a commit, AI edit): re-feed the sub-editors */
+  /** external model change (undo of a commit, programmatic edit): re-feed the sub-editors */
   const sync = (boxes: TextboxDisplay[] | null) => {
     if (!boxes || boxes === knownBoxes) return
     knownBoxes = boxes
