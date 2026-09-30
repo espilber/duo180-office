@@ -1,7 +1,5 @@
-import { withVi } from '../../shared/with-vi'
-
 /** Strings for editor/, pagination, and line-metrics */
-export const editorStrings = withVi({
+export const editorStrings = {
   zh: {
     opsCmdNone: '没有匹配的块；文档未更改。',
     opsCmdNoneUnchanged: '{count} 个匹配块保持不变',
@@ -1482,4 +1480,4 @@ export const editorStrings = withVi({
     editorCoverFacet: '切面',
     editorCoverAnnual: '年度報告',
   },
-})
+}

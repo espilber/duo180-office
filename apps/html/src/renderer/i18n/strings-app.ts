@@ -1,4 +1,3 @@
-import { withVi } from '../../shared/with-vi'
 import { zh } from './app/zh'
 import { en } from './app/en'
 import { ja } from './app/ja'
@@ -21,7 +20,7 @@ import { hi } from './app/hi'
 import { zhTW } from './app/zh-TW'
 
 /** User-visible strings for the app shell (status, errors) */
-export const appStrings = withVi({
+export const appStrings = {
   zh,
   en,
   ja,
@@ -42,4 +41,4 @@ export const appStrings = withVi({
   he,
   hi,
   'zh-TW': zhTW,
-})
+}

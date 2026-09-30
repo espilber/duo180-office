@@ -1,4 +1,3 @@
-import { withVi } from '../../shared/with-vi'
 import { zh } from './ribbon/zh'
 import { en } from './ribbon/en'
 import { ja } from './ribbon/ja'
@@ -21,7 +20,7 @@ import { hi } from './ribbon/hi'
 import { zhTW } from './ribbon/zh-TW'
 
 /** Copy for Ribbon / InsertDialogs / insert-presets / icons */
-export const ribbonStrings = withVi({
+export const ribbonStrings = {
   zh,
   en,
   ja,
@@ -42,4 +41,4 @@ export const ribbonStrings = withVi({
   he,
   hi,
   'zh-TW': zhTW,
-})
+}

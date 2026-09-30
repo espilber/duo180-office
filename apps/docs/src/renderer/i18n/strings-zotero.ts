@@ -1,7 +1,5 @@
-import { withVi } from '../../shared/with-vi'
-
 /** Strings for the Zotero integration in the References tab. */
-export const zoteroStrings = withVi({
+export const zoteroStrings = {
   zh: {
     zoteroCitation: 'Zotero 引文',
     zoteroCitationTip: '使用 Zotero 添加引文；光标在现有引文中时可编辑',
@@ -354,4 +352,4 @@ export const zoteroStrings = withVi({
       '此文件的註腳或章節附註中含有 Zotero 引文，GenOffice 目前還無法更新它們。為保持參考文獻完整，已停用此文件的 Zotero 命令。',
     zoteroGroup: 'Zotero',
   },
-})
+}

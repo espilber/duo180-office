@@ -1,5 +1,3 @@
-import { withVi } from '../../shared/with-vi'
-
 const en = {
   ribbonTableStyleOptions: 'Table Style Options',
   ribbonTableFirstRow: 'Header Row',
@@ -31,7 +29,7 @@ const en = {
  * reviewed terminology. Keeping one complete key set prevents partially
  * translated dialogs and lets language packs override the shard incrementally.
  */
-export const tableStrings = withVi({
+export const tableStrings = {
   zh: en,
   en,
   ja: en,
@@ -52,4 +50,4 @@ export const tableStrings = withVi({
   he: en,
   hi: en,
   'zh-TW': en,
-})
+}

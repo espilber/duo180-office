@@ -1,4 +1,3 @@
-import { withVi } from '../../shared/with-vi'
 import { zh } from './dialogs/zh'
 import { en } from './dialogs/en'
 import { ja } from './dialogs/ja'
@@ -21,7 +20,7 @@ import { hi } from './dialogs/hi'
 import { zhTW } from './dialogs/zh-TW'
 
 /** Copy for the dialogs (advanced filter, cell format, pivot table, header/footer, symbols, slicer…) */
-export const dialogStrings = withVi({
+export const dialogStrings = {
   zh,
   en,
   ja,
@@ -42,4 +41,4 @@ export const dialogStrings = withVi({
   he,
   hi,
   'zh-TW': zhTW,
-})
+}
