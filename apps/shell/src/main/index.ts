@@ -1,4 +1,4 @@
-import { execSync, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import {
   copyFileSync,
   cpSync,
@@ -23,7 +23,7 @@ import {
   webContents,
 } from 'electron'
 import type { MenuItemConstructorOptions, NativeImage, WebContents } from 'electron'
-import { atomicWriteFile } from './atomic-write'
+import { atomicCopyFile, atomicWriteFile } from './atomic-write'
 import { tabStripOverlay } from './title-bar-overlay'
 import menuDocxIcon1x from './assets/menu-docx.png?asset'
 import menuDocxIcon2x from './assets/menu-docx@2x.png?asset'
@@ -63,9 +63,15 @@ import {
   setUpdateCheckInvoker,
   installRendererProtocol,
 } from '@genoffice/electron-utils'
-import { readAppSettings, writeAppSetting, writeAppSettings } from './app-settings'
+import {
+  readAppSettings,
+  writeAppSetting,
+  writeAppSettings,
+  writeAppSettingThen,
+} from './app-settings'
 import { OPEN_DOCUMENTS_FILE, clearOpenDocuments, publishOpenDocuments } from './open-documents'
 import { createDefaultAppService, execFileRunner } from './default-app'
+import { isElectronProcess } from './dev-instance'
 import { handleDroppedFiles } from './dropped-files'
 import { collectLaunchPaths } from './launch-paths'
 
@@ -103,6 +109,7 @@ import {
   hasActiveQueuedWorkbook,
   installSheetsMenu,
   markSheetsShuttingDown,
+  resetSheetsShuttingDown,
   requestSheetsClose,
   resolveSheetsSessionPath,
   sendSheetsMenuAction,
@@ -394,9 +401,12 @@ function currentLang(): Lang {
 }
 
 function persistLang(lang: Lang): void {
-  uiLang = lang
-  setUiLang(lang)
-  writeAppSetting(APP_SETTINGS_PATH(), 'language', lang)
+  // write first: app-settings.json can be unwritable, and a language committed to
+  // memory before the write survives only until the next launch
+  writeAppSettingThen(APP_SETTINGS_PATH(), 'language', lang, (persisted) => {
+    uiLang = persisted
+    setUiLang(persisted)
+  })
 }
 
 let cachedUpdateChannel: UpdateChannel | null = null
@@ -2781,33 +2791,41 @@ function createShellWindow(): void {
       return
     event.preventDefault()
     void (async () => {
-      for (const tab of dirtySheets) {
-        manager.activateTab(tab.id)
-        if (!(await requestSheetsClose(tab.webContents, win))) return
+      const denied = await (async () => {
+        for (const tab of dirtySheets) {
+          manager.activateTab(tab.id)
+          if (!(await requestSheetsClose(tab.webContents, win))) return true
+        }
+        for (const tab of dirtyPdf) {
+          manager.activateTab(tab.id)
+          if (!(await requestPdfClose(tab.webContents, win))) return true
+        }
+        for (const tab of dirtyMarkdown) {
+          manager.activateTab(tab.id)
+          if (!(await requestMarkdownClose(tab.webContents, win))) return true
+        }
+        for (const tab of dirtyHtml) {
+          manager.activateTab(tab.id)
+          if (!(await requestHtmlClose(tab.webContents, win))) return true
+        }
+        for (const tab of dirtySlides) {
+          manager.activateTab(tab.id)
+          if (!(await requestSlidesClose(tab.webContents, win))) return true
+        }
+        for (const tab of docsTabs) {
+          if (!(await docsQueryDirty(tab.webContents))) continue
+          manager.activateTab(tab.id)
+          if (!(await requestDocsClose(tab.webContents, win))) return true
+        }
+        return false
+      })()
+      // a denied close vetoes any quit that was in flight: the sheets close
+      // guard must prompt again on later closes instead of silently proceeding
+      if (denied) resetSheetsShuttingDown()
+      else {
+        closeConfirmed = true
+        if (!win.isDestroyed()) win.close()
       }
-      for (const tab of dirtyPdf) {
-        manager.activateTab(tab.id)
-        if (!(await requestPdfClose(tab.webContents, win))) return
-      }
-      for (const tab of dirtyMarkdown) {
-        manager.activateTab(tab.id)
-        if (!(await requestMarkdownClose(tab.webContents, win))) return
-      }
-      for (const tab of dirtyHtml) {
-        manager.activateTab(tab.id)
-        if (!(await requestHtmlClose(tab.webContents, win))) return
-      }
-      for (const tab of dirtySlides) {
-        manager.activateTab(tab.id)
-        if (!(await requestSlidesClose(tab.webContents, win))) return
-      }
-      for (const tab of docsTabs) {
-        if (!(await docsQueryDirty(tab.webContents))) continue
-        manager.activateTab(tab.id)
-        if (!(await requestDocsClose(tab.webContents, win))) return
-      }
-      closeConfirmed = true
-      if (!win.isDestroyed()) win.close()
     })()
   })
 
@@ -3223,7 +3241,7 @@ function registerHomeIpc(): void {
     },
   )
 
-  ipcMain.handle(HOME_CHANNELS.duplicateFile, (_event, path: unknown) => {
+  ipcMain.handle(HOME_CHANNELS.duplicateFile, async (_event, path: unknown) => {
     if (typeof path !== 'string' || !existsSync(path)) return
     const ext = extname(path)
     const base = basename(path, ext)
@@ -3231,7 +3249,13 @@ function registerHomeIpc(): void {
     for (let i = 1; ; i++) {
       const target = join(dir, `${base} ${tm('copySuffix')}${i === 1 ? '' : ` ${i}`}${ext}`)
       if (existsSync(target)) continue
-      copyFileSync(path, target)
+      try {
+        // kernel-side copy + temp-file rename: a duplicate is never half-written
+        await atomicCopyFile(path, target)
+      } catch (err) {
+        showErrorDialog(shellWindow, tm('errNewTabFailed'), err)
+        return
+      }
       recordRecentFile(target)
       return
     }
@@ -4692,9 +4716,11 @@ app.whenReady().then(async () => {
     try {
       const oldPid = Number(readFileSync(devPidFile(), 'utf-8').trim())
       if (Number.isFinite(oldPid) && oldPid > 0 && oldPid !== process.pid) {
-        // pid-recycling guard: only kill if that pid is still an Electron process
-        const cmd = execSync(`ps -o command= -p ${oldPid}`).toString()
-        if (cmd.includes('Electron')) process.kill(oldPid, 'SIGKILL')
+        // pid-recycling guard: only kill if that pid is still an Electron process.
+        // isElectronProcess probes with tasklist on Windows instead of ps, which
+        // does not exist in cmd.exe and made every takeover after an orphaned
+        // dev instance give up and quit with code 0 before any window appeared.
+        if (isElectronProcess(oldPid)) process.kill(oldPid, 'SIGKILL')
       }
     } catch {
       // no previous instance recorded / already gone (ps exits non-zero)

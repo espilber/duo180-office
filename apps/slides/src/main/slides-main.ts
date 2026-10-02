@@ -429,9 +429,7 @@ export function setSlidesOpenedHook(fn: ((wc: WebContents, path: string) => void
  * back to the drafts/default save folder.
  */
 let slideSaveDirResolver: ((wc: WebContents) => string | null) | null = null
-export function setSlidesSaveDirResolver(
-  fn: ((wc: WebContents) => string | null) | null,
-): void {
+export function setSlidesSaveDirResolver(fn: ((wc: WebContents) => string | null) | null): void {
   slideSaveDirResolver = fn
 }
 
@@ -4087,7 +4085,13 @@ export function registerSlidesIpc(): void {
   ipcMain.handle('slides:export-pdf', async (_e, op: ExportPdfOp): Promise<ExportPdfResult> => {
     return exportSlidesPdf({
       ...op,
-      createWindow: () => new BrowserWindow({ show: false, webPreferences: { sandbox: true } }),
+      // hidden window: without this, throttled timers/rAF stall the
+      // PRINT_READY_SCRIPT settle wait (same as the headless export window)
+      createWindow: () =>
+        new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: true, backgroundThrottling: false },
+        }),
       openExportedPdf,
     })
   })
@@ -4197,7 +4201,6 @@ export function registerSlidesIpc(): void {
   // ── Presenter-view multi-screen show (registered inside registerSlidesIpc: shell
   // aggregate mode only calls this function) ──
   registerPresenterIpc()
-
 }
 /** hidden export windows: webContents id -> the PDF path the renderer must write */
 const headlessExportTargets = new Map<number, string>()
